@@ -824,6 +824,259 @@ def main():
         st.warning(f"⚠️ Cost optimization data not available. Please run the advanced_analytics.sql script first.")
         st.info("Run: `sql/advanced_analytics.sql` to enable cost tracking features.")
     
+    st.divider()
+    
+    # ========================================================================
+    # Supplier Integration & Purchase Orders
+    # ========================================================================
+    st.markdown(section_header("Supplier Management & Purchase Orders", "box"), unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    try:
+        # Load supplier data
+        purchase_orders = session.table("purchase_orders").to_pandas()
+        supplier_performance = session.table("supplier_performance").to_pandas()
+        delivery_schedule = session.table("delivery_schedule").to_pandas()
+        po_summary = session.table("purchase_order_summary").to_pandas()
+        
+        # Tabs for different views
+        tab1, tab2, tab3, tab4 = st.tabs(["📋 Purchase Orders", "🏢 Suppliers", "📅 Delivery Schedule", "📊 Analytics"])
+        
+        with tab1:
+            st.subheader("Auto-Generated Purchase Orders")
+            
+            if not purchase_orders.empty:
+                # Summary metrics
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("Total Orders", len(purchase_orders))
+                
+                with col2:
+                    urgent_count = len(purchase_orders[purchase_orders['ORDER_PRIORITY'] == 'URGENT'])
+                    st.metric("Urgent Orders", urgent_count, delta="High Priority" if urgent_count > 0 else None)
+                
+                with col3:
+                    total_cost = purchase_orders['TOTAL_COST'].sum()
+                    st.metric("Total Value", f"₹{total_cost:,.0f}")
+                
+                with col4:
+                    unique_suppliers = purchase_orders['SUPPLIER_NAME'].nunique()
+                    st.metric("Active Suppliers", unique_suppliers)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Priority filter
+                priority_filter = st.multiselect(
+                    "Filter by Priority",
+                    options=['URGENT', 'NORMAL', 'PLANNED'],
+                    default=['URGENT', 'NORMAL']
+                )
+                
+                filtered_po = purchase_orders[purchase_orders['ORDER_PRIORITY'].isin(priority_filter)]
+                
+                # Display purchase orders
+                if not filtered_po.empty:
+                    # Color code by priority
+                    def highlight_priority(row):
+                        if row['ORDER_PRIORITY'] == 'URGENT':
+                            return ['background-color: #ffe6e6'] * len(row)
+                        elif row['ORDER_PRIORITY'] == 'NORMAL':
+                            return ['background-color: #fff4e6'] * len(row)
+                        else:
+                            return ['background-color: #e8f5e9'] * len(row)
+                    
+                    display_cols = ['PURCHASE_ORDER_ID', 'LOCATION', 'ITEM', 'SUPPLIER_NAME', 
+                                   'ORDER_QUANTITY', 'TOTAL_COST', 'EXPECTED_DELIVERY_DATE', 
+                                   'ORDER_PRIORITY', 'RELIABILITY_SCORE']
+                    
+                    st.dataframe(
+                        filtered_po[display_cols].style.apply(highlight_priority, axis=1).format({
+                            'TOTAL_COST': '₹{:,.2f}',
+                            'RELIABILITY_SCORE': '{:.1f}%'
+                        }),
+                        use_container_width=True,
+                        hide_index=True,
+                        height=400
+                    )
+                    
+                    # Export button
+                    csv = filtered_po.to_csv(index=False)
+                    st.download_button(
+                        label="📥 Download Purchase Orders (CSV)",
+                        data=csv,
+                        file_name=f"purchase_orders_{datetime.now().strftime('%Y%m%d')}.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+                else:
+                    st.info("No purchase orders match the selected filters.")
+            else:
+                st.info("No purchase orders generated. Check reorder recommendations.")
+        
+        with tab2:
+            st.subheader("Supplier Performance")
+            
+            if not supplier_performance.empty:
+                # Performance metrics
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    excellent = len(supplier_performance[supplier_performance['PERFORMANCE_RATING'] == 'EXCELLENT'])
+                    st.metric("Excellent Suppliers", excellent, help="Reliability ≥ 95%")
+                
+                with col2:
+                    avg_reliability = supplier_performance['RELIABILITY_SCORE'].mean()
+                    st.metric("Avg Reliability", f"{avg_reliability:.1f}%")
+                
+                with col3:
+                    avg_lead_time = supplier_performance['AVG_LEAD_TIME_DAYS'].mean()
+                    st.metric("Avg Lead Time", f"{avg_lead_time:.1f} days")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Supplier comparison chart
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Reliability chart
+                    fig = px.bar(
+                        supplier_performance.sort_values('RELIABILITY_SCORE', ascending=False).head(10),
+                        x='SUPPLIER_NAME',
+                        y='RELIABILITY_SCORE',
+                        title='Top 10 Suppliers by Reliability',
+                        color='RELIABILITY_SCORE',
+                        color_continuous_scale=[[0, '#DC143C'], [0.7, '#FFA500'], [1, '#29B5E8']]
+                    )
+                    fig.update_layout(
+                        font=dict(family="Segoe UI", color="#0F4C81"),
+                        xaxis_tickangle=-45,
+                        plot_bgcolor='#FFFFFF',
+                        paper_bgcolor='#F0F2F6'
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                with col2:
+                    # Lead time chart
+                    fig = px.scatter(
+                        supplier_performance,
+                        x='AVG_LEAD_TIME_DAYS',
+                        y='RELIABILITY_SCORE',
+                        size='TOTAL_ORDERS',
+                        color='PERFORMANCE_RATING',
+                        hover_data=['SUPPLIER_NAME', 'ITEM'],
+                        title='Reliability vs Lead Time',
+                        color_discrete_map={
+                            'EXCELLENT': '#29B5E8',
+                            'GOOD': '#4CAF50',
+                            'AVERAGE': '#FFA500',
+                            'POOR': '#DC143C'
+                        }
+                    )
+                    fig.update_layout(
+                        font=dict(family="Segoe UI", color="#0F4C81"),
+                        plot_bgcolor='#FFFFFF',
+                        paper_bgcolor='#F0F2F6'
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                # Detailed table
+                st.dataframe(
+                    supplier_performance.style.format({
+                        'RELIABILITY_SCORE': '{:.1f}%',
+                        'ACTUAL_ON_TIME_PCT': '{:.1f}%',
+                        'UNIT_PRICE': '₹{:.2f}'
+                    }),
+                    use_container_width=True,
+                    hide_index=True,
+                    height=300
+                )
+            else:
+                st.info("No supplier performance data available.")
+        
+        with tab3:
+            st.subheader("Delivery Schedule")
+            
+            if not delivery_schedule.empty:
+                # Filter by timeframe
+                timeframe_filter = st.selectbox(
+                    "Show Deliveries",
+                    options=['All', 'TODAY', 'TOMORROW', 'THIS_WEEK', 'LATER'],
+                    index=0
+                )
+                
+                if timeframe_filter != 'All':
+                    filtered_schedule = delivery_schedule[delivery_schedule['DELIVERY_TIMEFRAME'] == timeframe_filter]
+                else:
+                    filtered_schedule = delivery_schedule
+                
+                if not filtered_schedule.empty:
+                    # Group by date
+                    for date in filtered_schedule['EXPECTED_DELIVERY_DATE'].unique():
+                        date_deliveries = filtered_schedule[filtered_schedule['EXPECTED_DELIVERY_DATE'] == date]
+                        
+                        with st.expander(f"📅 {date} ({len(date_deliveries)} deliveries)", expanded=(timeframe_filter in ['TODAY', 'TOMORROW'])):
+                            for idx, delivery in date_deliveries.iterrows():
+                                priority_emoji = {
+                                    'URGENT': '🔴',
+                                    'NORMAL': '🟡',
+                                    'PLANNED': '🟢'
+                                }.get(delivery['ORDER_PRIORITY'], '⚪')
+                                
+                                st.markdown(f"""
+                                **{priority_emoji} {delivery['ITEM']}** - {delivery['LOCATION']}
+                                - Supplier: {delivery['SUPPLIER_NAME']}
+                                - Quantity: {delivery['ORDER_QUANTITY']:.0f} units
+                                - Cost: ₹{delivery['TOTAL_COST']:,.2f}
+                                - Status: {delivery['STOCK_STATUS']}
+                                """)
+                else:
+                    st.info(f"No deliveries scheduled for {timeframe_filter}.")
+            else:
+                st.info("No delivery schedule available.")
+        
+        with tab4:
+            st.subheader("Purchase Order Analytics")
+            
+            if not po_summary.empty:
+                # Summary by location and priority
+                fig = px.bar(
+                    po_summary,
+                    x='LOCATION',
+                    y='TOTAL_COST',
+                    color='ORDER_PRIORITY',
+                    title='Purchase Order Value by Location and Priority',
+                    barmode='group',
+                    color_discrete_map={
+                        'URGENT': '#DC143C',
+                        'NORMAL': '#FFA500',
+                        'PLANNED': '#4CAF50'
+                    },
+                    labels={'TOTAL_COST': 'Total Cost (₹)'}
+                )
+                fig.update_layout(
+                    font=dict(family="Segoe UI", color="#0F4C81"),
+                    plot_bgcolor='#FFFFFF',
+                    paper_bgcolor='#F0F2F6'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Summary table
+                st.dataframe(
+                    po_summary.style.format({
+                        'TOTAL_COST': '₹{:,.2f}',
+                        'AVG_DELIVERY_DAYS': '{:.1f}'
+                    }),
+                    use_container_width=True,
+                    hide_index=True
+                )
+            else:
+                st.info("No purchase order analytics available.")
+    
+    except Exception as e:
+        st.warning(f"⚠️ Supplier integration data not available. Please run the supplier_integration.sql script first.")
+        st.info("Run: `sql/supplier_integration.sql` to enable supplier management features.")
+    
     # Footer
     st.divider()
     st.markdown("""
