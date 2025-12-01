@@ -81,15 +81,40 @@ class AlertSender:
         
         print(f"\n📤 Sending {len(alerts_df)} alerts...")
         
-        for channel in self.alert_channels:
-            if channel == 'console':
-                self._send_console_alerts(alerts_df)
-            elif channel == 'email':
-                self._send_email_alerts(alerts_df)
-            elif channel == 'slack':
-                self._send_slack_alerts(alerts_df)
-            elif channel == 'webhook':
-                self._send_webhook_alerts(alerts_df)
+        # Always show console alerts
+        if 'console' in self.alert_channels:
+            self._send_console_alerts(alerts_df)
+        
+        # Send email notifications
+        if 'email' in self.alert_channels:
+            try:
+                from email_notifier import EmailNotifier
+                email_notifier = EmailNotifier()
+                email_notifier.send_alert_email(alerts_df)
+            except Exception as e:
+                print(f"⚠️ Email notification failed: {e}")
+        
+        # Send Slack notifications
+        if 'slack' in self.alert_channels:
+            try:
+                from slack_notifier import SlackNotifier
+                slack_notifier = SlackNotifier()
+                slack_notifier.send_alert_message(alerts_df)
+            except Exception as e:
+                print(f"⚠️ Slack notification failed: {e}")
+        
+    
+    def configure_channels(self, channels: list):
+        """
+        Configure which notification channels to use.
+        
+        Args:
+            channels: List of channel names ('console', 'email', 'slack')
+        """
+        valid_channels = ['console', 'email', 'slack']
+        self.alert_channels = [ch for ch in channels if ch in valid_channels]
+        print(f"✅ Configured channels: {', '.join(self.alert_channels)}")
+
     
     def _send_console_alerts(self, alerts_df: pd.DataFrame):
         """
@@ -134,65 +159,7 @@ class AlertSender:
         
         print("\n" + "=" * 80)
     
-    def _send_email_alerts(self, alerts_df: pd.DataFrame):
-        """
-        Send alerts via email.
-        Requires SMTP configuration.
-        """
-        print("📧 Email alerts not configured. Add SMTP settings to enable.")
-        
-        # Example implementation:
-        # import smtplib
-        # from email.mime.text import MIMEText
-        # 
-        # subject = f"StockPulse 360: {len(alerts_df)} Critical Alerts"
-        # body = self._format_email_body(alerts_df)
-        # 
-        # msg = MIMEText(body, 'html')
-        # msg['Subject'] = subject
-        # msg['From'] = 'alerts@stockpulse.com'
-        # msg['To'] = 'procurement@hospital.com'
-        # 
-        # with smtplib.SMTP('smtp.gmail.com', 587) as server:
-        #     server.starttls()
-        #     server.login('user', 'password')
-        #     server.send_message(msg)
-    
-    def _send_slack_alerts(self, alerts_df: pd.DataFrame):
-        """
-        Send alerts to Slack channel.
-        Requires Slack webhook URL.
-        """
-        print("💬 Slack alerts not configured. Add webhook URL to enable.")
-        
-        # Example implementation:
-        # import requests
-        # 
-        # webhook_url = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
-        # 
-        # for _, alert in alerts_df.iterrows():
-        #     message = {
-        #         "text": f"🚨 *{alert['alert_type']}*: {alert['item']} at {alert['location']}",
-        #         "blocks": [...]
-        #     }
-        #     requests.post(webhook_url, json=message)
-    
-    def _send_webhook_alerts(self, alerts_df: pd.DataFrame):
-        """
-        Send alerts to custom webhook endpoint.
-        """
-        print("🔗 Webhook alerts not configured. Add endpoint URL to enable.")
-        
-        # Example implementation:
-        # import requests
-        # 
-        # webhook_url = "https://your-api.com/alerts"
-        # payload = alerts_df.to_dict('records')
-        # 
-        # response = requests.post(webhook_url, json=payload)
-        # print(f"Webhook response: {response.status_code}")
-    
-    def acknowledge_alert(self, alert_id: int, acknowledged_by: str):
+    def get_alert_summary(self):
         """
         Mark an alert as acknowledged.
         """

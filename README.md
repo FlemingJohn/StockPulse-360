@@ -47,19 +47,6 @@ CSV Upload → Snowflake Stage → stock_raw Table
 
 | Technology | Purpose |
 |------------|---------|
-| **SQL Worksheets** | Table creation, data pipelines |
-| **Dynamic Tables** | Auto-refresh metrics (usage, safety stock, stock-out dates) |
-| **Streams** | Track new stock data insertions |
-| **Tasks** | Automate alerts and daily reports |
-| **Snowpark (Python)** | AI demand forecasting models |
-| **Streamlit** | Interactive dashboard |
-| **Unistore** | Store user actions and approvals |
-
----
-
-## 📁 Project Structure
-
-```
 StockPulse 360/
 │
 ├── data/
@@ -149,7 +136,25 @@ python python/forecast_model.py
 python python/alert_sender.py
 ```
 
-### Step 4: Deploy Streamlit Dashboard
+### Step 4: Configure Notifications (Optional)
+
+Set up email and Slack notifications:
+
+```bash
+# Copy example env file
+copy .env.example .env
+
+# Edit .env with your credentials
+# See NOTIFICATION_SETUP.md for detailed instructions
+```
+
+Test notifications:
+```bash
+python python/email_notifier.py
+python python/slack_notifier.py
+```
+
+### Step 5: Deploy Streamlit Dashboard
 
 **Option A: Deploy in Snowflake (Recommended)**
 1. Go to Snowflake UI → Streamlit
@@ -231,28 +236,6 @@ This solution directly helps:
 ---
 
 ## 🔗 Snowflake Documentation References
-
-- [Dynamic Tables](https://docs.snowflake.com/en/user-guide/dynamic-tables-intro)
-- [Streams](https://docs.snowflake.com/en/user-guide/streams)
-- [Tasks](https://docs.snowflake.com/en/user-guide/tasks-intro)
-- [Snowpark Python](https://docs.snowflake.com/en/developer-guide/snowpark/python/index)
-- [Streamlit in Snowflake](https://docs.snowflake.com/en/developer-guide/streamlit/about-streamlit)
-
----
-
-## 📝 Next Steps
-
-1. **Enhance Forecasting** - Integrate Snowflake ML models
-2. **Add Notifications** - Email/Slack/WhatsApp alerts
-3. **Mobile App** - React Native dashboard
-4. **Price Integration** - Add cost calculations
-5. **Supplier Integration** - Auto-send purchase orders
-
----
-
-## 👥 Contributing
-
-This is a hackathon project. Feel free to fork and enhance!
 
 ---
 
