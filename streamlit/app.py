@@ -68,6 +68,19 @@ st.markdown("""
         margin-bottom: 2rem;
     }
     
+    /* SVG Icons */
+    .icon-container {
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+    
+    .section-header-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
     /* Metric Cards */
     .metric-card {
         background: linear-gradient(135deg, #FFFFFF 0%, #F0F2F6 100%);
@@ -192,6 +205,92 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================================================================
+# SVG Icon Functions
+# ============================================================================
+
+def get_svg_icon(icon_name, size=24, color="#29B5E8"):
+    """Get SVG icon by name."""
+    icons = {
+        'chart': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 3v18h18" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M18 9l-5 5-4-4-3 3" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'box': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="22.08" x2="12" y2="12" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'alert': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="9" x2="12" y2="13" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="17" x2="12.01" y2="17" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'location': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="10" r="3" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'cart': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="9" cy="21" r="1" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="21" r="1" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'trending': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="17 6 23 6 23 12" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'map': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="8" y1="2" x2="8" y2="18" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="16" y1="6" x2="16" y2="22" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'snowflake': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="12" y1="2" x2="12" y2="22" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 7l-8 5-8-5" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 17l-8-5-8 5" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 7l8 5 8-5" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 17l8-5 8 5" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'settings': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="3" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 1v6m0 6v6m8.66-15l-3 5.2M6.34 15.8l-3 5.2m12.66 0l-3-5.2M6.34 8.2l-3-5.2" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'refresh': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polyline points="23 4 23 10 17 10" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'filter': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'info': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="16" x2="12" y2="12" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="8" x2="12.01" y2="8" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+    }
+    return icons.get(icon_name, '')
+
+def section_header(title, icon_name):
+    """Create a section header with icon."""
+    icon_svg = get_svg_icon(icon_name, size=28, color="#29B5E8")
+    return f'''
+    <div class="section-header-icon">
+        <span class="icon-container">{icon_svg}</span>
+        <h2 style="color: #0F4C81; margin: 0; display: inline-block;">{title}</h2>
+    </div>
+    '''
+
+# ============================================================================
 # Helper Functions
 # ============================================================================
 
@@ -249,17 +348,20 @@ def main():
     
     # Sidebar
     with st.sidebar:
-        st.header("⚙️ Dashboard Controls")
+        st.markdown(section_header("Dashboard Controls", "settings"), unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        # Refresh button
-        if st.button("🔄 Refresh Data", use_container_width=True):
+        # Refresh button with icon
+        refresh_icon = get_svg_icon('refresh', size=20, color="#FFFFFF")
+        if st.button(f"{refresh_icon} Refresh Data", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
         
         st.divider()
         
         # Filters
-        st.subheader("🔍 Filters")
+        st.markdown(section_header("Filters", "filter"), unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         
         # Load data for filters
         stock_data = load_stock_risk_data()
@@ -276,7 +378,8 @@ def main():
         st.divider()
         
         # Info
-        st.subheader("ℹ️ About")
+        st.markdown(section_header("About", "info"), unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         st.info("""
         **StockPulse 360** helps hospitals, ration shops, and NGOs:
         - Monitor stock health in real-time
@@ -297,7 +400,8 @@ def main():
     # ========================================================================
     # KPI Metrics
     # ========================================================================
-    st.header("📈 Key Metrics")
+    st.markdown(section_header("Key Metrics", "chart"), unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     
     col1, col2, col3, col4, col5 = st.columns(5)
     
@@ -326,7 +430,8 @@ def main():
     # ========================================================================
     # Stock Health Heatmap
     # ========================================================================
-    st.header("🗺️ Stock Health Heatmap")
+    st.markdown(section_header("Stock Health Heatmap", "map"), unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     
     tab1, tab2 = st.tabs(["📊 Heatmap View", "📋 Table View"])
     
@@ -377,7 +482,8 @@ def main():
     # ========================================================================
     # Critical Alerts
     # ========================================================================
-    st.header("🚨 Critical Alerts")
+    st.markdown(section_header("Critical Alerts", "alert"), unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     
     alerts_data = load_critical_alerts()
     
@@ -410,7 +516,8 @@ def main():
     # ========================================================================
     # Location Summary
     # ========================================================================
-    st.header("📍 Location Summary")
+    st.markdown(section_header("Location Summary", "location"), unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     
     location_data = load_location_summary()
     
@@ -454,7 +561,8 @@ def main():
     # ========================================================================
     # Procurement Recommendations
     # ========================================================================
-    st.header("🛒 Procurement Recommendations")
+    st.markdown(section_header("Procurement Recommendations", "cart"), unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     
     procurement_data = load_procurement_export()
     
@@ -487,7 +595,8 @@ def main():
     # ========================================================================
     # Item Performance
     # ========================================================================
-    st.header("📦 Item Performance Analysis")
+    st.markdown(section_header("Item Performance Analysis", "trending"), unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     
     item_data = load_item_performance()
     
