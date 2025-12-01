@@ -131,6 +131,11 @@ Run the SQL scripts in the `sql/` folder in this order:
    ```bash
    pip install -r requirements.txt
    ```
+   > **Windows Users:** If `pip` is not recognized, run:
+   > ```bash
+   > py -m pip install -r requirements.txt
+   > ```
+
 2. Update `python/config.py` with your Snowflake credentials.
 
 ### Step 3: Run the Dashboard

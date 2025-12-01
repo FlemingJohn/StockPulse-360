@@ -16,8 +16,8 @@ plotly>=5.18.0
 # Notifications
 requests>=2.31.0
 
-# Optional: For email alerts
-# python-dotenv>=1.0.0
+# Required: For email alerts and env vars
+python-dotenv>=1.0.0
 
-# Optional: For Slack/webhook alerts
-# requests>=2.31.0
+# Required: For Slack/webhook alerts
+requests>=2.31.0
