@@ -35,36 +35,158 @@ st.set_page_config(
 )
 
 # ============================================================================
-# Custom CSS
+# Custom CSS - Snowflake Theme
 # ============================================================================
 st.markdown("""
 <style>
+    /* Snowflake Color Palette */
+    :root {
+        --snowflake-blue: #29B5E8;
+        --snowflake-dark-blue: #1E88E5;
+        --snowflake-light-blue: #E3F2FD;
+        --snowflake-navy: #0F4C81;
+        --snowflake-gray: #F0F2F6;
+    }
+    
+    /* Main Header */
     .main-header {
-        font-size: 3rem;
-        font-weight: bold;
-        color: #1f77b4;
+        font-size: 3.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #29B5E8 0%, #1E88E5 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         text-align: center;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
+        font-family: 'Segoe UI', sans-serif;
     }
+    
+    .subtitle {
+        text-align: center;
+        color: #0F4C81;
+        font-size: 1.2rem;
+        font-weight: 500;
+        margin-bottom: 2rem;
+    }
+    
+    /* Metric Cards */
     .metric-card {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #1f77b4;
+        background: linear-gradient(135deg, #FFFFFF 0%, #F0F2F6 100%);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-left: 5px solid #29B5E8;
+        box-shadow: 0 2px 8px rgba(41, 181, 232, 0.1);
+        transition: transform 0.2s;
     }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(41, 181, 232, 0.2);
+    }
+    
+    /* Alert Cards */
     .critical-alert {
-        background-color: #ffe6e6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #dc143c;
-        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #FFF5F5 0%, #FFE6E6 100%);
+        padding: 1.2rem;
+        border-radius: 12px;
+        border-left: 5px solid #DC143C;
+        margin-bottom: 0.8rem;
+        box-shadow: 0 2px 6px rgba(220, 20, 60, 0.1);
     }
+    
     .warning-alert {
-        background-color: #fff4e6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #ffa500;
-        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #FFFEF5 0%, #FFF4E6 100%);
+        padding: 1.2rem;
+        border-radius: 12px;
+        border-left: 5px solid #FFA500;
+        margin-bottom: 0.8rem;
+        box-shadow: 0 2px 6px rgba(255, 165, 0, 0.1);
+    }
+    
+    /* Buttons - Snowflake Style */
+    .stButton>button {
+        background: linear-gradient(135deg, #29B5E8 0%, #1E88E5 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s;
+        box-shadow: 0 2px 6px rgba(41, 181, 232, 0.3);
+    }
+    
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);
+        box-shadow: 0 4px 12px rgba(41, 181, 232, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* Sidebar - Snowflake Theme */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #FFFFFF 0%, #F0F2F6 100%);
+        border-right: 2px solid #29B5E8;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background-color: #F0F2F6;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 20px;
+        color: #0F4C81;
+        font-weight: 600;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #29B5E8 0%, #1E88E5 100%);
+        color: white;
+    }
+    
+    /* Dataframe Styling */
+    .dataframe {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Metrics */
+    [data-testid="stMetricValue"] {
+        color: #0F4C81;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        color: #29B5E8;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    /* Divider */
+    hr {
+        border-color: #29B5E8;
+        opacity: 0.3;
+    }
+    
+    /* Info boxes */
+    .stInfo {
+        background-color: #E3F2FD;
+        border-left: 5px solid #29B5E8;
+        border-radius: 8px;
+    }
+    
+    .stSuccess {
+        background-color: #E8F5E9;
+        border-left: 5px solid #4CAF50;
+        border-radius: 8px;
+    }
+    
+    .stWarning {
+        background-color: #FFF4E6;
+        border-left: 5px solid #FFA500;
+        border-radius: 8px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -119,9 +241,9 @@ def get_status_color(status):
 # ============================================================================
 
 def main():
-    # Header
-    st.markdown('<div class="main-header">📊 StockPulse 360</div>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: #666; font-size: 1.2rem;">AI-Driven Stock Health Monitor for Hospitals & Public Distribution Systems</p>', unsafe_allow_html=True)
+    # Header with Snowflake branding
+    st.markdown('<div class="main-header">❄️ StockPulse 360</div>', unsafe_allow_html=True)
+    st.markdown('<p class="subtitle">AI-Driven Stock Health Monitor | Powered by Snowflake</p>', unsafe_allow_html=True)
     
     st.divider()
     
@@ -221,11 +343,17 @@ def main():
             fig = px.imshow(
                 pivot_data,
                 labels=dict(x="Item", y="Location", color="Health Score"),
-                color_continuous_scale='RdYlGn',
+                color_continuous_scale=[[0, '#DC143C'], [0.5, '#FFA500'], [1, '#29B5E8']],  # Snowflake colors
                 aspect="auto",
                 title="Stock Health Score by Location and Item"
             )
-            fig.update_layout(height=400)
+            fig.update_layout(
+                height=400,
+                font=dict(family="Segoe UI, sans-serif", color="#0F4C81"),
+                title_font=dict(size=20, color="#0F4C81", family="Segoe UI"),
+                plot_bgcolor='#FFFFFF',
+                paper_bgcolor='#F0F2F6'
+            )
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.warning("No data available for the selected filters.")
@@ -402,9 +530,16 @@ def main():
     # Footer
     st.divider()
     st.markdown("""
-    <div style="text-align: center; color: #666; padding: 1rem;">
-        <p>StockPulse 360 | Powered by Snowflake ❄️ | Built for AI for Good Hackathon</p>
-        <p>Last Updated: {}</p>
+    <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #F0F2F6 0%, #FFFFFF 100%); border-radius: 12px; margin-top: 2rem;">
+        <p style="color: #0F4C81; font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+            ❄️ StockPulse 360 | Powered by Snowflake
+        </p>
+        <p style="color: #29B5E8; font-size: 0.9rem; margin-bottom: 0.5rem;">
+            Built for AI for Good Hackathon 🏆
+        </p>
+        <p style="color: #666; font-size: 0.85rem;">
+            Last Updated: {}
+        </p>
     </div>
     """.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")), unsafe_allow_html=True)
 
