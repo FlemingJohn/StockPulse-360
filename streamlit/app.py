@@ -277,6 +277,11 @@ def get_svg_icon(icon_name, size=24, color="#29B5E8"):
             <line x1="12" y1="16" x2="12" y2="12" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <line x1="12" y1="8" x2="12.01" y2="8" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>''',
+        
+        'dollar': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="12" y1="1" x2="12" y2="23" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
     }
     return icons.get(icon_name, '')
 
@@ -635,6 +640,189 @@ def main():
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.success("✅ No items have critical locations!")
+    
+    st.divider()
+    
+    # ========================================================================
+    # Cost Optimization Dashboard
+    # ========================================================================
+    st.markdown(section_header("Cost Optimization & Budget Tracking", "box"), unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Load cost data
+    try:
+        budget_data = session.table("budget_tracking").to_pandas()
+        savings_data = session.table("cost_savings_dashboard").to_pandas()
+        cost_location_data = session.table("cost_per_location").to_pandas()
+        roi_data = session.table("roi_analysis").to_pandas()
+        
+        # Budget Status Card
+        if not budget_data.empty:
+            budget_row = budget_data.iloc[0]
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric(
+                    "Monthly Budget",
+                    f"₹{budget_row['MONTHLY_BUDGET']:,.0f}",
+                    help="Total allocated budget for the month"
+                )
+            
+            with col2:
+                st.metric(
+                    "Estimated Spend",
+                    f"₹{budget_row['ESTIMATED_SPEND']:,.0f}",
+                    delta=f"{budget_row['BUDGET_UTILIZATION_PCT']:.1f}%",
+                    delta_color="inverse"
+                )
+            
+            with col3:
+                remaining = budget_row['REMAINING_BUDGET']
+                delta_color = "normal" if remaining > 0 else "inverse"
+                st.metric(
+                    "Remaining Budget",
+                    f"₹{abs(remaining):,.0f}",
+                    delta="Over budget" if remaining < 0 else "Available",
+                    delta_color=delta_color
+                )
+            
+            with col4:
+                status = budget_row['BUDGET_STATUS']
+                status_emoji = {
+                    'HEALTHY': '✅',
+                    'MODERATE': '⚠️',
+                    'WARNING': '🟠',
+                    'OVER_BUDGET': '🔴'
+                }.get(status, '❓')
+                st.metric(
+                    "Budget Status",
+                    f"{status_emoji} {status}",
+                    help="Current budget health status"
+                )
+            
+            # Budget Alert
+            if budget_row['BUDGET_STATUS'] == 'OVER_BUDGET':
+                over_amount = abs(budget_row['REMAINING_BUDGET'])
+                st.error(f"⚠️ **Budget Alert:** Procurement exceeds budget by ₹{over_amount:,.2f}")
+            elif budget_row['BUDGET_STATUS'] == 'WARNING':
+                st.warning(f"⚠️ **Warning:** Budget utilization at {budget_row['BUDGET_UTILIZATION_PCT']:.1f}%")
+        
+        st.divider()
+        
+        # Cost Savings & ROI
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("💰 Cost Savings Breakdown")
+            
+            if not savings_data.empty:
+                # Create pie chart for savings
+                fig = px.pie(
+                    savings_data,
+                    values='TOTAL_SAVINGS',
+                    names='SAVINGS_CATEGORY',
+                    title='Savings by Category',
+                    color_discrete_sequence=['#29B5E8', '#1E88E5', '#1565C0']
+                )
+                fig.update_layout(
+                    font=dict(family="Segoe UI", color="#0F4C81"),
+                    plot_bgcolor='#FFFFFF',
+                    paper_bgcolor='#F0F2F6'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Savings table
+                st.dataframe(
+                    savings_data[['SAVINGS_CATEGORY', 'TOTAL_SAVINGS', 'ITEMS_AFFECTED', 'DESCRIPTION']],
+                    use_container_width=True,
+                    hide_index=True
+                )
+                
+                total_savings = savings_data['TOTAL_SAVINGS'].sum()
+                st.success(f"✅ **Total Savings:** ₹{total_savings:,.2f}")
+            else:
+                st.info("No cost savings data available yet.")
+        
+        with col2:
+            st.subheader("📊 Return on Investment (ROI)")
+            
+            if not roi_data.empty:
+                roi_row = roi_data.iloc[0]
+                
+                # ROI Metrics
+                st.metric(
+                    "Total Procurement Cost",
+                    f"₹{roi_row['TOTAL_PROCUREMENT_COST']:,.2f}",
+                    help="Total cost of recommended orders"
+                )
+                
+                st.metric(
+                    "Total Value Generated",
+                    f"₹{roi_row['TOTAL_VALUE_GENERATED']:,.2f}",
+                    help="Savings + Stockout cost avoided"
+                )
+                
+                st.metric(
+                    "ROI Percentage",
+                    f"{roi_row['ROI_PERCENTAGE']:.1f}%",
+                    delta="Positive ROI" if roi_row['ROI_PERCENTAGE'] > 0 else "Negative ROI",
+                    delta_color="normal" if roi_row['ROI_PERCENTAGE'] > 0 else "inverse"
+                )
+                
+                # ROI Breakdown
+                st.markdown("**Value Breakdown:**")
+                st.write(f"- Cost Savings: ₹{roi_row['TOTAL_SAVINGS']:,.2f}")
+                st.write(f"- Stockout Prevention: ₹{roi_row['STOCKOUT_COST_AVOIDED']:,.2f}")
+                
+                if roi_row['ROI_PERCENTAGE'] > 50:
+                    st.success("🎉 Excellent ROI! System is highly effective.")
+                elif roi_row['ROI_PERCENTAGE'] > 20:
+                    st.info("✅ Good ROI. System is performing well.")
+                else:
+                    st.warning("⚠️ ROI could be improved.")
+            else:
+                st.info("ROI data not available yet.")
+        
+        st.divider()
+        
+        # Cost by Location
+        st.subheader("📍 Procurement Cost by Location")
+        
+        if not cost_location_data.empty:
+            # Bar chart
+            fig = px.bar(
+                cost_location_data,
+                x='LOCATION',
+                y='TOTAL_COST',
+                title='Total Procurement Cost by Location',
+                color='TOTAL_COST',
+                color_continuous_scale=[[0, '#29B5E8'], [1, '#0F4C81']],
+                labels={'TOTAL_COST': 'Total Cost (₹)'}
+            )
+            fig.update_layout(
+                font=dict(family="Segoe UI", color="#0F4C81"),
+                plot_bgcolor='#FFFFFF',
+                paper_bgcolor='#F0F2F6'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Detailed table
+            st.dataframe(
+                cost_location_data.style.format({
+                    'TOTAL_COST': '₹{:,.2f}',
+                    'AVG_ITEM_PRICE': '₹{:,.2f}',
+                    'HIGHEST_COST_ITEM_VALUE': '₹{:,.2f}'
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.info("No cost data available by location.")
+    
+    except Exception as e:
+        st.warning(f"⚠️ Cost optimization data not available. Please run the advanced_analytics.sql script first.")
+        st.info("Run: `sql/advanced_analytics.sql` to enable cost tracking features.")
     
     # Footer
     st.divider()
