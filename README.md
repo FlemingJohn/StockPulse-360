@@ -112,6 +112,7 @@ StockPulse 360/
 ### Prerequisites
 1. **Snowflake Account**
 2. **Python 3.8+**
+   > **Note for Windows Users:** If `python` command is not recognized, try using `py` instead.
 3. **VS Code**
 
 ### Step 1: Set Up Snowflake
