@@ -140,26 +140,26 @@ ORDER BY avg_health_score ASC;
 
 CREATE OR REPLACE VIEW item_performance AS
 SELECT
-    item,
-    COUNT(DISTINCT location) AS locations_stocked,
-    SUM(current_stock) AS total_stock_all_locations,
-    ROUND(AVG(avg_daily_usage), 2) AS avg_usage_per_location,
-    SUM(total_issued) AS total_issued_7days,
+    s.item,
+    COUNT(DISTINCT s.location) AS locations_stocked,
+    SUM(s.current_stock) AS total_stock_all_locations,
+    ROUND(AVG(s.avg_daily_usage), 2) AS avg_usage_per_location,
+    SUM(s.total_issued) AS total_issued_7days,
     
     -- Identify high-demand items
     CASE
-        WHEN AVG(avg_daily_usage) > (SELECT AVG(avg_daily_usage) FROM stock_stats) THEN 'HIGH_DEMAND'
-        WHEN AVG(avg_daily_usage) < (SELECT AVG(avg_daily_usage) FROM stock_stats) / 2 THEN 'LOW_DEMAND'
+        WHEN AVG(s.avg_daily_usage) > (SELECT AVG(avg_daily_usage) FROM stock_stats) THEN 'HIGH_DEMAND'
+        WHEN AVG(s.avg_daily_usage) < (SELECT AVG(avg_daily_usage) FROM stock_stats) / 2 THEN 'LOW_DEMAND'
         ELSE 'NORMAL'
     END AS demand_category,
     
     -- Risk summary
-    SUM(CASE WHEN stock_status IN ('OUT_OF_STOCK', 'CRITICAL') THEN 1 ELSE 0 END) AS critical_locations,
+    SUM(CASE WHEN h.stock_status IN ('OUT_OF_STOCK', 'CRITICAL') THEN 1 ELSE 0 END) AS critical_locations,
     
-    MAX(last_updated_date) AS last_updated
+    MAX(s.last_updated_date) AS last_updated
 FROM stock_stats s
 JOIN stock_health h ON s.location = h.location AND s.item = h.item
-GROUP BY item
+GROUP BY s.item
 ORDER BY total_issued_7days DESC;
 
 -- ============================================================================
