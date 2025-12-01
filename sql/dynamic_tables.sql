@@ -158,7 +158,7 @@ SHOW DYNAMIC TABLES;
 -- Check refresh status
 SELECT 
     name,
-    scheduling_state,
+    state,
     target_lag,
     data_timestamp,
     refresh_mode
