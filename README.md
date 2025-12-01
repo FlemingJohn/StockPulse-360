@@ -1,8 +1,8 @@
-# StockPulse 360
+# ❄️ StockPulse 360
 
 **AI-Driven Stock Health Monitor for Hospitals & Public Distribution Systems**
 
-Built with Snowflake for the AI for Good Hackathon 🏆
+Built with **Snowflake** for the **AI for Good Hackathon** 🏆
 
 ---
 
@@ -13,64 +13,96 @@ Hospitals, ration shops, and NGOs struggle with fragmented stock data across mul
 - ❌ Food and medicine wastage
 - ❌ Emergency orders and higher costs
 - ❌ Lack of visibility into inventory health
+- ❌ Inefficient supplier management
 
 ## 💡 Solution
 
-StockPulse 360 provides:
-- ✅ **Real-time Stock Health Heatmap** - Visual dashboard showing stock status across locations
-- ✅ **AI-Powered Demand Forecasting** - Predict stock-outs 7-14 days in advance
-- ✅ **Smart Reorder Recommendations** - Automated procurement suggestions
-- ✅ **Critical Alerts** - Instant notifications for low stock situations
-- ✅ **One-Click Export** - Ready-to-use procurement lists for teams
+StockPulse 360 is a comprehensive end-to-end solution providing:
+
+### 🧠 Advanced AI/ML
+- **Cortex AI Forecasting**: Native Snowflake ML for high-accuracy demand prediction
+- **Anomaly Detection**: Identifies unusual usage patterns and potential theft
+- **Seasonal Analysis**: Recognizes holiday spikes and seasonal trends
+
+### 📊 Advanced Analytics
+- **ABC Analysis**: Classifies inventory by value (High/Medium/Low)
+- **Stockout Impact**: Quantifies patient/beneficiary impact of shortages
+- **Cost Optimization**: Tracks budget, ROI, and identifies savings opportunities
+
+### ⛓️ Supply Chain Automation
+- **Supplier Integration**: Auto-selects best suppliers based on reliability & price
+- **Smart Procurement**: Auto-generates purchase orders with delivery estimates
+- **Performance Tracking**: Monitors supplier lead times and reliability scores
+
+### ⚡ Core Features
+- **Real-time Heatmap**: Visual stock health dashboard
+- **Critical Alerts**: Instant notifications (Email/Slack)
+- **One-Click Export**: Ready-to-use procurement lists
 
 ---
 
 ## 🏗️ Architecture
 
-```
-CSV Upload → Snowflake Stage → stock_raw Table
-                                      ↓
-                            Dynamic Tables (Auto-refresh)
-                                      ↓
-                    ┌─────────────────┼─────────────────┐
-                    ↓                 ↓                 ↓
-              stock_stats      stock_health    reorder_recommendations
-                    ↓                 ↓                 ↓
-                    └─────────────────┼─────────────────┘
-                                      ↓
-                            Views & Streamlit Dashboard
+```mermaid
+graph TD
+    A[CSV Upload] -->|Snowpipe| B[Snowflake Stage]
+    B --> C[stock_raw Table]
+    C --> D{Dynamic Tables}
+    D --> E[stock_stats]
+    D --> F[stock_health]
+    D --> G[reorder_recommendations]
+    
+    subgraph "AI & Analytics Layer"
+        H[Cortex AI Forecaster]
+        I[Anomaly Detector]
+        J[ABC Analysis]
+        K[Supplier Engine]
+    end
+    
+    E & F & G --> H
+    E & F & G --> I
+    E & F & G --> J
+    G --> K
+    
+    H & I & J & K --> L[Streamlit Dashboard]
+    L --> M[User Action]
 ```
 
 ---
 
-## 🛠️ Snowflake Technologies Used
+## 🛠️ Project Structure
 
-| Technology | Purpose |
-|------------|---------|
+```text
 StockPulse 360/
 │
-├── data/
-│   └── stock_data.csv              # Sample stock data
+├── data/                   # Sample stock data
+├── Guides/                 # Detailed documentation
+│   ├── AI_ML_FEATURES.md
+│   ├── ADVANCED_ANALYTICS.md
+│   ├── NOTIFICATION_SETUP.md
+│   └── ...
 │
-├── sql/
-│   ├── create_tables.sql           # Base table definitions
-│   ├── load_data.sql               # Data ingestion scripts
-│   ├── dynamic_tables.sql          # Auto-refresh calculations
-│   ├── views.sql                   # Business views
-│   └── streams_tasks.sql           # Automation workflows
+├── sql/                    # Snowflake SQL Scripts
+│   ├── create_tables.sql       # Base tables
+│   ├── load_data.sql           # Data ingestion
+│   ├── dynamic_tables.sql      # Auto-refresh metrics
+│   ├── views.sql               # Core views
+│   ├── streams_tasks.sql       # Automation
+│   ├── ai_ml_views.sql         # AI/ML integration
+│   ├── advanced_analytics.sql  # ABC & Cost analysis
+│   └── supplier_integration.sql # Supplier management
 │
-├── python/
-│   ├── config.py                   # Snowflake connection config
-│   ├── forecast_model.py           # AI demand forecasting
-│   ├── alert_sender.py             # Alert notifications
-│   └── data_loader.py              # CSV data loader
+├── python/                 # Python Modules
+│   ├── cortex_ai_forecaster.py # Snowflake Cortex AI
+│   ├── anomaly_detector.py     # Anomaly detection
+│   ├── seasonal_forecaster.py  # Seasonal patterns
+│   ├── alert_sender.py         # Notification system
+│   └── ...
 │
 ├── streamlit/
-│   └── app.py                      # Main dashboard
+│   └── app.py              # Main dashboard application
 │
-├── requirements.txt                # Python dependencies
-├── Project_details.md              # Detailed project documentation
-└── README.md                       # This file
+└── requirements.txt        # Dependencies
 ```
 
 ---
@@ -78,179 +110,81 @@ StockPulse 360/
 ## 🚀 Quick Start
 
 ### Prerequisites
-
-1. **Snowflake Account** - [Sign up for free trial](https://signup.snowflake.com/)
-2. **VS Code** with Snowflake extension
-3. **Python 3.8+**
+1. **Snowflake Account**
+2. **Python 3.8+**
+3. **VS Code**
 
 ### Step 1: Set Up Snowflake
-
-1. Open VS Code and connect to your Snowflake account
-2. Run SQL scripts in order:
-   ```sql
-   -- 1. Create tables and stage
-   @sql/create_tables.sql
-   
-   -- 2. Load sample data
-   @sql/load_data.sql
-   
-   -- 3. Create dynamic tables
-   @sql/dynamic_tables.sql
-   
-   -- 4. Create views
-   @sql/views.sql
-   
-   -- 5. Set up streams and tasks
-   @sql/streams_tasks.sql
-   ```
+Run the SQL scripts in the `sql/` folder in this order:
+1. `create_tables.sql`
+2. `load_data.sql`
+3. `dynamic_tables.sql`
+4. `views.sql`
+5. `streams_tasks.sql`
+6. `ai_ml_views.sql`
+7. `advanced_analytics.sql`
+8. `supplier_integration.sql`
 
 ### Step 2: Configure Python
-
 1. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
+2. Update `python/config.py` with your Snowflake credentials.
 
-2. Update `python/config.py` with your Snowflake credentials:
-   ```python
-   SNOWFLAKE_CONFIG = {
-       "account": "your_account_identifier",
-       "user": "your_username",
-       "password": "your_password",
-       "warehouse": "compute_wh",
-       "database": "stockpulse_db",
-       "schema": "public"
-   }
-   ```
-
-### Step 3: Run Python Modules (Optional)
-
-```bash
-# Load data from CSV
-python python/data_loader.py
-
-# Generate demand forecasts
-python python/forecast_model.py
-
-# Send alerts
-python python/alert_sender.py
-```
-
-### Step 4: Configure Notifications (Optional)
-
-Set up email and Slack notifications:
-
-```bash
-# Copy example env file
-copy .env.example .env
-
-# Edit .env with your credentials
-# See NOTIFICATION_SETUP.md for detailed instructions
-```
-
-Test notifications:
-```bash
-python python/email_notifier.py
-python python/slack_notifier.py
-```
-
-### Step 5: Deploy Streamlit Dashboard
-
-**Option A: Deploy in Snowflake (Recommended)**
-1. Go to Snowflake UI → Streamlit
-2. Create new Streamlit app
-3. Copy contents of `streamlit/app.py`
-4. Run the app
-
-**Option B: Run Locally**
+### Step 3: Run the Dashboard
 ```bash
 streamlit run streamlit/app.py
 ```
 
 ---
 
-## 📊 Dashboard Features
+## 📊 Dashboard Sections
 
-### 1. **Stock Health Heatmap**
-- Color-coded grid (Location × Item)
-- 🟢 Green = Healthy | 🟡 Yellow = Warning | 🔴 Red = Critical
+### 1. **Overview & Heatmap**
+- Real-time stock health visualization
+- Key metrics (Stock-outs, Critical items, Value)
 
-### 2. **Critical Alerts**
-- Real-time notifications for low stock
-- Days until stock-out predictions
-- Recommended reorder quantities
+### 2. **AI/ML Insights**
+- **Forecast Comparison**: Cortex AI vs Traditional models
+- **Anomaly Dashboard**: Detected irregularities
+- **Seasonal Trends**: Monthly and weekly patterns
 
-### 3. **Location Summary**
-- Health score by location
-- Status distribution charts
-- Overall location performance
+### 3. **Advanced Analytics**
+- **ABC Analysis**: Inventory classification
+- **Cost Optimization**: Budget tracking & ROI
+- **Stockout Impact**: Patient impact analysis
 
-### 4. **Procurement Recommendations**
-- Auto-generated reorder list
-- Priority-based ordering
-- One-click CSV export
-
-### 5. **Item Performance**
-- Top items by usage
-- Demand categorization
-- Critical location tracking
+### 4. **Supplier Management**
+- **Purchase Orders**: Auto-generated POs
+- **Supplier Performance**: Reliability & Lead time tracking
+- **Delivery Schedule**: Expected arrivals
 
 ---
 
 ## 🔄 Automated Workflows
 
-### Tasks (Scheduled Automation)
-
 | Task | Schedule | Purpose |
 |------|----------|---------|
-| `process_new_stock` | Every 1 hour | Process new stock data |
-| `generate_critical_alerts` | Every 30 minutes | Generate alerts for critical items |
-| `daily_summary_report` | Daily at 8 AM | Generate daily summary |
-| `cleanup_old_alerts` | Weekly (Sunday 2 AM) | Archive old alerts |
-
-### Streams
-
-- `stock_raw_stream` - Tracks new stock insertions
-- `stock_health_stream` - Monitors health status changes
-
----
-
-## 📈 Sample Data
-
-The project includes realistic sample data for:
-- **Locations**: Chennai, Mumbai, Delhi
-- **Items**: Paracetamol, ORS, Insulin
-- **Metrics**: Opening stock, received, issued, closing stock, lead time
+| `process_new_stock` | Hourly | Process new stock data |
+| `generate_critical_alerts` | Every 30 mins | Generate alerts |
+| `daily_summary_report` | Daily 8 AM | Summary report |
+| `cleanup_old_alerts` | Weekly | Archive old alerts |
 
 ---
 
 ## 🎯 AI for Good Impact
 
-This solution directly helps:
-- 🏥 **Hospitals** - Get early warnings for medicine shortages
-- 🍚 **Ration Shops** - Reduce food wastage
-- 🤝 **NGOs** - Ensure uninterrupted supplies to beneficiaries
-- 👥 **Patients** - Receive timely treatment without stock-outs
-- 📊 **Government Teams** - Better planning and resource allocation
-
----
-
-## 🔗 Snowflake Documentation References
+- 🏥 **Hospitals**: Prevent life-saving drug shortages
+- 🍚 **Ration Shops**: Optimize food distribution
+- 🤝 **NGOs**: Maximize donor fund impact
+- 🌍 **Sustainability**: Reduce waste through better forecasting
 
 ---
 
 ## 📄 License
-
 MIT License - Built for AI for Good
 
 ---
 
-## 🙏 Acknowledgments
-
-- Built with ❄️ Snowflake
-- Powered by AI for Good
-- Designed for hospitals, NGOs, and public distribution systems
-
----
-
-**Made with ❤️ for a better world**
+**Made with ❤️ and ❄️ Snowflake**
