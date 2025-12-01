@@ -142,6 +142,37 @@ Run the SQL scripts in the `sql/` folder in this order:
 ```bash
 streamlit run streamlit/app.py
 ```
+> **Windows Users:** If `streamlit` is not recognized, run:
+> ```bash
+> py -m streamlit run streamlit/app.py
+> ```
+
+---
+
+## ❄️ Using Snowflake CLI (Optional)
+
+You can also use the **Snowflake CLI** (`snow`) to manage your project.
+
+### 1. Install Snowflake CLI
+```bash
+py -m pip install snowflake-cli-labs
+```
+
+### 2. Configure Connection
+```bash
+snow connection add --connection-name stockpulse --account="<your_account>" --user="<your_username>" --password="<your_password>" --host="<your_account>.snowflakecomputing.com" --port=443 --region="<your_region>" --authenticator="snowflake" --no-interactive
+```
+
+### 3. Run SQL Scripts
+```bash
+snow sql -f sql/create_tables.sql -c stockpulse
+snow sql -f sql/load_data.sql -c stockpulse
+```
+
+### 4. Deploy Streamlit App
+```bash
+snow streamlit deploy --project "StockPulse 360" --file streamlit/app.py
+```
 
 ---
 
