@@ -357,8 +357,7 @@ def main():
         st.markdown("<br>", unsafe_allow_html=True)
         
         # Refresh button with icon
-        refresh_icon = get_svg_icon('refresh', size=20, color="#FFFFFF")
-        if st.button(f"{refresh_icon} Refresh Data", use_container_width=True):
+        if st.button("🔄 Refresh Data", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
         

@@ -5,6 +5,10 @@ Reference: https://docs.snowflake.com/en/developer-guide/python-connector/python
 
 import os
 from typing import Dict
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # ============================================================================
 # Snowflake Connection Configuration
