@@ -27,9 +27,8 @@ CREATE OR REPLACE TABLE suppliers (
     on_time_deliveries NUMBER DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP(),
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP(),
-    COMMENT 'Supplier master data with performance tracking'
-);
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
+) COMMENT = 'Supplier master data with performance tracking';
 
 -- Insert sample suppliers
 INSERT INTO suppliers (supplier_id, supplier_name, item, avg_lead_time_days, reliability_score, unit_price, contact_email, contact_phone, last_delivery_date, total_orders, on_time_deliveries)
@@ -129,6 +128,17 @@ ORDER BY reliability_score DESC, avg_lead_time_days ASC;
 -- Compare suppliers for the same item
 
 CREATE OR REPLACE VIEW supplier_comparison AS
+WITH supplier_metrics AS (
+    SELECT
+        item,
+        supplier_name,
+        unit_price,
+        avg_lead_time_days,
+        reliability_score,
+        MIN(unit_price) OVER (PARTITION BY item) as min_price_per_item
+    FROM suppliers
+    WHERE is_active = TRUE
+)
 SELECT
     item,
     supplier_name,
@@ -139,16 +149,15 @@ SELECT
     ROUND(
         (reliability_score * 0.5) +  -- 50% weight on reliability
         ((100 - (avg_lead_time_days * 10)) * 0.3) +  -- 30% weight on speed
-        ((100 - ((unit_price / MIN(unit_price) OVER (PARTITION BY item) - 1) * 100)) * 0.2),  -- 20% weight on price
+        ((100 - ((unit_price / NULLIF(min_price_per_item, 0) - 1) * 100)) * 0.2),  -- 20% weight on price
         2
     ) AS overall_score,
     RANK() OVER (PARTITION BY item ORDER BY 
         (reliability_score * 0.5) + 
         ((100 - (avg_lead_time_days * 10)) * 0.3) + 
-        ((100 - ((unit_price / MIN(unit_price) OVER (PARTITION BY item) - 1) * 100)) * 0.2) DESC
+        ((100 - ((unit_price / NULLIF(min_price_per_item, 0) - 1) * 100)) * 0.2) DESC
     ) AS supplier_rank
-FROM suppliers
-WHERE is_active = TRUE
+FROM supplier_metrics
 ORDER BY item, supplier_rank;
 
 -- ============================================================================
