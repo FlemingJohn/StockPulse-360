@@ -100,52 +100,90 @@ def section_header(title, icon_name):
 # Data Loading Functions
 # ============================================================================
 
+def get_session():
+    """Get Snowflake session from session_state or global."""
+    # Try to get from session_state first
+    if hasattr(st, 'session_state') and 'session' in st.session_state:
+        return st.session_state['session']
+    # Fallback: try to import and get session
+    try:
+        from snowflake.snowpark.context import get_active_session
+        return get_active_session()
+    except:
+        try:
+            import sys
+            import os
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'python'))
+            from config import get_snowflake_session
+            return get_snowflake_session()
+        except Exception as e:
+            st.error(f"Failed to connect to Snowflake: {e}")
+            return None
+
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def load_stock_risk_data():
     """Load stock risk data from Snowflake."""
-    from streamlit import session_state
-    # Access session from main app
-    session = st.session_state.get('session')
+    session = get_session()
     if session:
-        df = session.table("stock_risk").to_pandas()
-        return df
-    return None
+        try:
+            df = session.table("stock_risk").to_pandas()
+            return df
+        except Exception as e:
+            st.error(f"Error loading stock_risk table: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
 
 @st.cache_data(ttl=300)
 def load_critical_alerts():
     """Load critical alerts."""
-    session = st.session_state.get('session')
+    session = get_session()
     if session:
-        df = session.table("critical_alerts").to_pandas()
-        return df
-    return None
+        try:
+            df = session.table("critical_alerts").to_pandas()
+            return df
+        except Exception as e:
+            st.error(f"Error loading critical_alerts table: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
 
 @st.cache_data(ttl=300)
 def load_location_summary():
     """Load location summary."""
-    session = st.session_state.get('session')
+    session = get_session()
     if session:
-        df = session.table("location_summary").to_pandas()
-        return df
-    return None
+        try:
+            df = session.table("location_summary").to_pandas()
+            return df
+        except Exception as e:
+            st.error(f"Error loading location_summary table: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
 
 @st.cache_data(ttl=300)
 def load_procurement_export():
     """Load procurement recommendations."""
-    session = st.session_state.get('session')
+    session = get_session()
     if session:
-        df = session.table("procurement_export").to_pandas()
-        return df
-    return None
+        try:
+            df = session.table("procurement_export").to_pandas()
+            return df
+        except Exception as e:
+            st.error(f"Error loading procurement_export table: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
 
 @st.cache_data(ttl=300)
 def load_item_performance():
     """Load item performance data."""
-    session = st.session_state.get('session')
+    session = get_session()
     if session:
-        df = session.table("item_performance").to_pandas()
-        return df
-    return None
+        try:
+            df = session.table("item_performance").to_pandas()
+            return df
+        except Exception as e:
+            st.error(f"Error loading item_performance table: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
 
 def get_status_color(status):
     """Get color for stock status."""
