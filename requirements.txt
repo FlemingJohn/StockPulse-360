@@ -13,6 +13,11 @@ numpy>=1.24.0
 streamlit>=1.29.0
 plotly>=5.18.0
 
+# UI Enhancements
+streamlit-extras>=0.3.0
+streamlit-card>=0.0.4
+streamlit-elements>=0.1.0
+
 # Notifications
 requests>=2.31.0
 
