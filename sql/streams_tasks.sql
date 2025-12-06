@@ -12,10 +12,10 @@ USE SCHEMA public;
 -- ============================================================================
 -- Stream 1: Track New Stock Data
 -- ============================================================================
--- Captures all INSERT operations on stock_raw table
+-- Captures all INSERT operations on raw_stock table
 
 CREATE OR REPLACE STREAM stock_raw_stream 
-ON TABLE stock_raw
+ON TABLE raw_stock
 COMMENT = 'Tracks new stock data insertions for processing';
 
 -- ============================================================================
@@ -53,8 +53,8 @@ BEGIN
         'DATA_INGESTION',
         OBJECT_CONSTRUCT(
             'records_processed', COUNT(*),
-            'locations', ARRAY_AGG(DISTINCT location),
-            'items', ARRAY_AGG(DISTINCT item)
+            'locations', ARRAY_AGG(DISTINCT "location"),
+            'items', ARRAY_AGG(DISTINCT "item")
         ),
         CURRENT_TIMESTAMP()
     FROM stock_raw_stream
@@ -82,29 +82,29 @@ BEGIN
         recommended_reorder_qty
     )
     SELECT
-        h.location,
-        h.item,
+        h."location",
+        h."item",
         h.stock_status AS alert_type,
         CASE
             WHEN h.stock_status = 'OUT_OF_STOCK' THEN 
-                'URGENT: ' || h.item || ' is OUT OF STOCK at ' || h.location
+                'URGENT: ' || h."item" || ' is OUT OF STOCK at ' || h."location"
             WHEN h.stock_status = 'CRITICAL' THEN 
-                'CRITICAL: ' || h.item || ' at ' || h.location || ' will run out in ' || 
+                'CRITICAL: ' || h."item" || ' at ' || h."location" || ' will run out in ' || 
                 ROUND(h.days_until_stockout, 1) || ' days'
             WHEN h.stock_status = 'WARNING' THEN 
-                'WARNING: ' || h.item || ' at ' || h.location || ' is running low'
+                'WARNING: ' || h."item" || ' at ' || h."location" || ' is running low'
         END AS alert_message,
         h.days_until_stockout,
         r.recommended_order_qty
     FROM stock_health h
     LEFT JOIN reorder_recommendations r 
-        ON h.location = r.location AND h.item = r.item
+        ON h."location" = r."location" AND h."item" = r."item"
     WHERE h.stock_status IN ('OUT_OF_STOCK', 'CRITICAL', 'WARNING')
     AND NOT EXISTS (
         -- Avoid duplicate alerts within last 24 hours
         SELECT 1 FROM alert_log a
-        WHERE a.location = h.location
-        AND a.item = h.item
+        WHERE a.location = h."location"
+        AND a.item = h."item"
         AND a.alert_type = h.stock_status
         AND a.alert_date > DATEADD(hour, -24, CURRENT_TIMESTAMP())
         AND a.acknowledged = FALSE
