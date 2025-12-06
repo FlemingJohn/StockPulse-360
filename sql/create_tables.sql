@@ -15,21 +15,19 @@ USE SCHEMA public;
 -- ============================================================================
 -- Main Stock Raw Data Table
 -- ============================================================================
--- Stores daily stock entries from hospitals, ration shops, and NGOs
+-- Stores stock data from hospitals, ration shops, and NGOs
 -- This is the source of truth for all stock movements
 
-CREATE OR REPLACE TABLE stock_raw (
+CREATE OR REPLACE TABLE raw_stock (
     location STRING NOT NULL COMMENT 'Hospital/Ration Shop/NGO location name',
     item STRING NOT NULL COMMENT 'Medicine/Food item name',
-    opening_stock NUMBER(10,2) NOT NULL COMMENT 'Stock at start of day',
-    received NUMBER(10,2) DEFAULT 0 COMMENT 'Quantity received during the day',
-    issued NUMBER(10,2) DEFAULT 0 COMMENT 'Quantity issued/consumed during the day',
-    closing_stock NUMBER(10,2) NOT NULL COMMENT 'Stock at end of day',
-    lead_time_days NUMBER(3,0) NOT NULL COMMENT 'Days needed to restock from supplier',
-    record_date DATE NOT NULL COMMENT 'Date of this stock record',
+    current_stock NUMBER(10,2) NOT NULL COMMENT 'Current stock level',
+    issued_qty NUMBER(10,2) DEFAULT 0 COMMENT 'Quantity issued/consumed',
+    received_qty NUMBER(10,2) DEFAULT 0 COMMENT 'Quantity received',
+    last_updated_date DATE NOT NULL COMMENT 'Date of this stock record',
     created_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP() COMMENT 'Record creation timestamp',
-    CONSTRAINT pk_stock_raw PRIMARY KEY (location, item, record_date)
-) COMMENT = 'Raw daily stock data from all locations';
+    CONSTRAINT pk_raw_stock PRIMARY KEY (location, item, last_updated_date)
+) COMMENT = 'Raw stock data from all locations';
 
 -- ============================================================================
 -- Create Stage for CSV Upload
@@ -107,7 +105,7 @@ CREATE OR REPLACE TABLE user_actions (
 SHOW TABLES;
 
 -- Verify table structure
-DESC TABLE stock_raw;
+DESC TABLE raw_stock;
 DESC TABLE forecast_output;
 DESC TABLE alert_log;
 DESC TABLE user_actions;
