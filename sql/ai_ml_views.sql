@@ -181,16 +181,16 @@ LEFT JOIN seasonal_insights s
 CREATE OR REPLACE VIEW ml_model_performance AS
 WITH actual_usage AS (
     SELECT
-        location,
-        item,
-        record_date,
-        issued AS actual_value
-    FROM stock_raw
+        "location",
+        "item",
+        "last_updated_date" AS record_date,
+        "issued_qty" AS actual_value
+    FROM raw_stock
 ),
 forecast_comparison AS (
     SELECT
-        a.location,
-        a.item,
+        a."location",
+        a."item",
         a.record_date,
         a.actual_value,
         f.basic_forecast_7day / 7 AS basic_forecast,
@@ -205,8 +205,8 @@ forecast_comparison AS (
         ABS(a.actual_value - f.ensemble_forecast) AS ensemble_error
     FROM actual_usage a
     JOIN ai_forecast_comparison f
-        ON a.location = f.location
-        AND a.item = f.item
+        ON a."location" = f.location
+        AND a."item" = f.item
         AND a.record_date = f.forecast_date
 )
 SELECT

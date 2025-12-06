@@ -20,16 +20,16 @@ WITH item_value AS (
     SELECT
         item,
         location,
-        SUM(issued) AS total_issued,
+        SUM("issued_qty") AS total_issued,
         -- Using estimated unit prices (can be replaced with actual price table)
-        CASE item
+        CASE "item"
             WHEN 'Insulin' THEN 500  -- High value
             WHEN 'ORS' THEN 10       -- Low value
             WHEN 'Paracetamol' THEN 5 -- Low value
             ELSE 10
         END AS unit_price
-    FROM stock_raw
-    GROUP BY item, location
+    FROM raw_stock
+    GROUP BY "item", "location"
 ),
 item_total_value AS (
     SELECT
@@ -76,15 +76,15 @@ WITH location_item_value AS (
     SELECT
         location,
         item,
-        SUM(issued) AS total_issued,
-        CASE item
+        SUM("issued_qty") AS total_issued,
+        CASE "item"
             WHEN 'Insulin' THEN 500
             WHEN 'ORS' THEN 10
             WHEN 'Paracetamol' THEN 5
             ELSE 10
         END AS unit_price
-    FROM stock_raw
-    GROUP BY location, item
+    FROM raw_stock
+    GROUP BY "location", "item"
 ),
 location_value AS (
     SELECT
@@ -156,7 +156,7 @@ SELECT
     
     h.last_updated_date
 FROM stock_health h
-LEFT JOIN abc_analysis a ON h.item = a.item
+LEFT JOIN abc_analysis a ON h."item" = a.item
 WHERE h.stock_status IN ('OUT_OF_STOCK', 'CRITICAL', 'WARNING')
 ORDER BY action_priority, patients_affected_until_stockout DESC;
 
@@ -198,9 +198,9 @@ SELECT
     
     CURRENT_TIMESTAMP() AS report_generated_at
 FROM stock_health h
-LEFT JOIN abc_analysis a ON h.item = a.item
-LEFT JOIN stockout_impact s ON h.location = s.location AND h.item = s.item
-LEFT JOIN reorder_recommendations r ON h.location = r.location AND h.item = r.item
+LEFT JOIN abc_analysis a ON h."item" = a.item
+LEFT JOIN stockout_impact s ON h."location" = s.location AND h."item" = s.item
+LEFT JOIN reorder_recommendations r ON h."location" = r."location" AND h."item" = r."item"
 WHERE h.stock_status IN ('OUT_OF_STOCK', 'CRITICAL', 'WARNING', 'LOW')
    OR a.abc_category = 'A'
 ORDER BY s.action_priority, a.management_priority, h.health_score;
