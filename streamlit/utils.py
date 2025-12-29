@@ -200,6 +200,46 @@ def load_seasonal_forecasts():
     return pd.DataFrame()
 
 
+@st.cache_data(ttl=300)
+def load_abc_analysis():
+    """Load ABC analysis data."""
+    session = get_session()
+    if session:
+        try:
+            df = session.sql('SELECT * FROM abc_analysis').to_pandas()
+            return df
+        except Exception as e:
+            st.warning(f"ABC analysis not available: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_stockout_impact():
+    """Load stockout impact analysis."""
+    session = get_session()
+    if session:
+        try:
+            df = session.sql('SELECT * FROM stockout_impact').to_pandas()
+            return df
+        except Exception as e:
+            st.warning(f"Stockout impact not available: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_budget_tracking():
+    """Load budget tracking data."""
+    session = get_session()
+    if session:
+        try:
+            df = session.sql('SELECT * FROM budget_tracking').to_pandas()
+            return df
+        except Exception as e:
+            st.warning(f"Budget tracking not available: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+
 def get_status_color(status):
     """Get color for stock status."""
     colors = {

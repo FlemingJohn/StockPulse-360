@@ -9,7 +9,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 from utils import get_svg_icon, section_header, load_stock_risk_data, load_critical_alerts
-from utils import load_procurement_export, load_item_performance, get_status_color, load_seasonal_forecasts
+from utils import load_procurement_export, load_item_performance, get_status_color, load_seasonal_forecasts, load_abc_analysis
+from utils import load_stockout_impact, load_budget_tracking
 
 # Streamlit extras for enhanced UI
 try:
@@ -471,24 +472,207 @@ def render_analytics_page(filtered_data):
     st.markdown(section_header("Advanced Analytics", "chart"), unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    st.info("Advanced analytics including ABC analysis, cost optimization, and stockout impact analysis.")
+    st.info("📊 Advanced analytics including ABC analysis, cost optimization, and stockout impact analysis.")
     
-    st.markdown("### Features")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("""
-        - **ABC Analysis**  
-          Classify inventory by value (High/Medium/Low)
-        - **Cost Optimization Dashboard**  
-          Track budget and ROI
-        """)
-    with col2:
-        st.markdown("""
-        - **Stockout Impact Analysis**  
-          Quantify patient/beneficiary impact
-        - **Budget Tracking**  
-          Monitor spending and identify savings
-        """)
+    # Create tabs for different analytics features
+    tab1, tab2, tab3 = st.tabs(["📈 ABC Analysis", "💰 Cost Optimization", "⚠️ Stockout Impact"])
+    
+    with tab1:
+        st.markdown("### ABC Analysis")
+        st.markdown("Classify inventory by value contribution (Pareto Principle)")
+        
+        # Load ABC data
+        abc_data = load_abc_analysis()
+        
+        if not abc_data.empty:
+            # Summary metrics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                a_items = len(abc_data[abc_data['ABC_CATEGORY'] == 'A'])
+                st.metric("Category A Items", a_items, help="High-value critical items")
+            with col2:
+                b_items = len(abc_data[abc_data['ABC_CATEGORY'] == 'B'])
+                st.metric("Category B Items", b_items, help="Medium-value items")
+            with col3:
+                c_items = len(abc_data[abc_data['ABC_CATEGORY'] == 'C'])
+                st.metric("Category C Items", c_items, help="Low-value items")
+            
+            st.markdown("")
+            
+            # ABC Distribution Chart
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                # Bar chart showing value by item
+                fig = px.bar(
+                    abc_data,
+                    x='item',
+                    y='TOTAL_VALUE',
+                    color='ABC_CATEGORY',
+                    title="Item Value Distribution (ABC Classification)",
+                    labels={'TOTAL_VALUE': 'Total Value (₹)', 'item': 'Item'},
+                    color_discrete_map={'A': '#DC143C', 'B': '#FFA500', 'C': '#32CD32'}
+                )
+                fig.update_layout(
+                    height=400,
+                    font=dict(family="Segoe UI, sans-serif", color="#0F4C81"),
+                    plot_bgcolor='#FFFFFF',
+                    paper_bgcolor='#F0F2F6'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                # Pie chart showing value percentage
+                fig2 = px.pie(
+                    abc_data,
+                    values='TOTAL_VALUE',
+                    names='item',
+                    title="Value Contribution",
+                    color='ABC_CATEGORY',
+                    color_discrete_map={'A': '#DC143C', 'B': '#FFA500', 'C': '#32CD32'}
+                )
+                fig2.update_layout(
+                    height=400,
+                    font=dict(family="Segoe UI, sans-serif", color="#0F4C81")
+                )
+                st.plotly_chart(fig2, use_container_width=True)
+            
+            # Data table
+            st.markdown("#### ABC Classification Details")
+            st.dataframe(
+                abc_data[['item', 'TOTAL_VALUE', 'TOTAL_QUANTITY', 'VALUE_PERCENTAGE', 'ABC_CATEGORY', 'CATEGORY_DESCRIPTION']],
+                use_container_width=True,
+                height=200
+            )
+        else:
+            st.info("🔧 ABC Analysis view not found. Run `python/create_abc_view.py` to create it.")
+    
+    with tab2:
+        st.markdown("### Cost Optimization Dashboard")
+        st.markdown("Track budget, identify savings, and optimize procurement costs")
+        
+        # Load budget data
+        budget_data = load_budget_tracking()
+        
+        if not budget_data.empty:
+            row = budget_data.iloc[0]
+            
+            # Budget metrics
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Monthly Budget", f"₹{row['MONTHLY_BUDGET']:,.0f}")
+            with col2:
+                st.metric("Estimated Spend", f"₹{row['ESTIMATED_SPEND']:,.0f}")
+            with col3:
+                delta_color = "inverse" if row['REMAINING_BUDGET'] < 0 else "normal"
+                st.metric("Remaining Budget", f"₹{row['REMAINING_BUDGET']:,.0f}", 
+                         delta=f"{row['BUDGET_UTILIZATION_PCT']:.1f}%")
+            with col4:
+                status_emoji = {'HEALTHY': '✅', 'MODERATE': '🟡', 'WARNING': '🟠', 'OVER_BUDGET': '🔴'}
+                st.metric("Budget Status", f"{status_emoji.get(row['BUDGET_STATUS'], '')} {row['BUDGET_STATUS']}")
+            
+            # Budget visualization
+            import plotly.graph_objects as go
+            fig = go.Figure(go.Indicator(
+                mode = "gauge+number+delta",
+                value = row['BUDGET_UTILIZATION_PCT'],
+                domain = {'x': [0, 1], 'y': [0, 1]},
+                title = {'text': "Budget Utilization %"},
+                delta = {'reference': 100},
+                gauge = {
+                    'axis': {'range': [None, 200]},
+                    'bar': {'color': "darkblue"},
+                    'steps': [
+                        {'range': [0, 75], 'color': "#32CD32"},
+                        {'range': [75, 90], 'color': "#FFD700"},
+                        {'range': [90, 100], 'color': "#FFA500"},
+                        {'range': [100, 200], 'color': "#DC143C"}],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': 100}}
+            ))
+            fig.update_layout(height=300, font=dict(family="Segoe UI, sans-serif"))
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("🔧 Budget tracking view not found. Run `python/create_advanced_views.py` to create it.")
+    
+    with tab3:
+        st.markdown("### Stockout Impact Analysis")
+        st.markdown("Quantify the patient/beneficiary impact of stock-outs")
+        
+        # Load stockout impact data
+        impact_data = load_stockout_impact()
+        
+        if not impact_data.empty:
+            # Summary metrics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                total_affected = impact_data['PATIENTS_AFFECTED_UNTIL_STOCKOUT'].sum()
+                st.metric("Total Patients Affected", f"{total_affected:,.0f}")
+            with col2:
+                critical_items = len(impact_data[impact_data['IMPACT_SEVERITY'].isin(['LIFE_THREATENING', 'HIGH_SEVERITY'])])
+                st.metric("Critical Items", critical_items)
+            with col3:
+                avg_priority = impact_data['ACTION_PRIORITY'].mean()
+                st.metric("Avg Action Priority", f"{avg_priority:.1f}")
+            
+            # Impact severity distribution
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                # Bar chart by item and severity
+                fig = px.bar(
+                    impact_data.sort_values('ACTION_PRIORITY'),
+                    x='item',
+                    y='PATIENTS_AFFECTED_UNTIL_STOCKOUT',
+                    color='IMPACT_SEVERITY',
+                    facet_col='location',
+                    title="Patient Impact by Item and Location",
+                    labels={'PATIENTS_AFFECTED_UNTIL_STOCKOUT': 'Patients Affected', 'item': 'Item'},
+                    color_discrete_map={
+                        'LIFE_THREATENING': '#8B0000',
+                        'HIGH_SEVERITY': '#DC143C',
+                        'MODERATE_SEVERITY': '#FFA500',
+                        'LOW_SEVERITY': '#FFD700'
+                    }
+                )
+                fig.update_layout(
+                    height=400,
+                    font=dict(family="Segoe UI, sans-serif", color="#0F4C81"),
+                    plot_bgcolor='#FFFFFF'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                # Severity pie chart
+                severity_counts = impact_data['IMPACT_SEVERITY'].value_counts()
+                fig2 = px.pie(
+                    values=severity_counts.values,
+                    names=severity_counts.index,
+                    title="Impact Severity Distribution",
+                    color=severity_counts.index,
+                    color_discrete_map={
+                        'LIFE_THREATENING': '#8B0000',
+                        'HIGH_SEVERITY': '#DC143C',
+                        'MODERATE_SEVERITY': '#FFA500',
+                        'LOW_SEVERITY': '#FFD700'
+                    }
+                )
+                fig2.update_layout(height=400)
+                st.plotly_chart(fig2, use_container_width=True)
+            
+            # Data table
+            st.markdown("#### Priority Action Items")
+            st.dataframe(
+                impact_data[['location', 'item', 'STOCK_STATUS', 'PATIENTS_AFFECTED_UNTIL_STOCKOUT', 
+                            'IMPACT_SEVERITY', 'ACTION_PRIORITY', 'ABC_CATEGORY']].sort_values('ACTION_PRIORITY'),
+                use_container_width=True,
+                height=300
+            )
+        else:
+            st.info("🔧 Stockout impact view not found. Run `python/create_advanced_views.py` to create it.")
+
 
 # ============================================================================
 # Page: Supplier Management
