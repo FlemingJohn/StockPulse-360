@@ -185,6 +185,21 @@ def load_item_performance():
             return pd.DataFrame()
     return pd.DataFrame()
 
+@st.cache_data(ttl=300)
+def load_seasonal_forecasts():
+    """Load seasonal forecasts from AI/ML analysis."""
+    session = get_session()
+    if session:
+        try:
+            # Use lowercase table name (the one with data)
+            df = session.sql('SELECT * FROM "seasonal_forecasts"').to_pandas()
+            return df
+        except Exception as e:
+            st.warning(f"Seasonal forecasts not available: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+
 def get_status_color(status):
     """Get color for stock status."""
     colors = {

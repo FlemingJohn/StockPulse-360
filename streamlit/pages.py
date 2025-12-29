@@ -9,7 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 from utils import get_svg_icon, section_header, load_stock_risk_data, load_critical_alerts
-from utils import load_procurement_export, load_item_performance, get_status_color
+from utils import load_procurement_export, load_item_performance, get_status_color, load_seasonal_forecasts
 
 # Streamlit extras for enhanced UI
 try:
@@ -333,23 +333,133 @@ def render_ai_ml_page(filtered_data):
     st.markdown(section_header("AI/ML Insights", "trending"), unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    st.info("AI/ML features including Cortex AI forecasting, anomaly detection, and seasonal analysis.")
+    # Load seasonal forecasts
+    forecasts = load_seasonal_forecasts()
     
-    st.markdown("### Features")
-    col1, col2 = st.columns(2)
-    with col1:
+    if forecasts is not None and not forecasts.empty:
+        # KPI Metrics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            total_forecasts = len(forecasts)
+            st.metric("Total Forecasts", total_forecasts, help="Total number of AI-generated forecasts")
+        with col2:
+            unique_items = forecasts['item'].nunique() if 'item' in forecasts.columns else 0
+            st.metric("Items Analyzed", unique_items, help="Number of unique items with forecasts")
+        with col3:
+            unique_locations = forecasts['location'].nunique() if 'location' in forecasts.columns else 0
+            st.metric("Locations", unique_locations, help="Number of locations covered")
+        with col4:
+            avg_forecast = forecasts['forecasted_usage'].mean() if 'forecasted_usage' in forecasts.columns else 0
+            st.metric("Avg Forecast", f"{avg_forecast:.1f}", help="Average forecasted usage")
+        
+        st.divider()
+        
+        # Tabs for different views
+        tab1, tab2 = st.tabs(["📈 Seasonal Forecasts", "📊 Forecast Data"])
+        
+        with tab1:
+            st.markdown("### Seasonal Usage Forecasts")
+            st.markdown("AI-powered forecasts based on weekly and monthly seasonal patterns")
+            
+            # Filter by location and item
+            col1, col2 = st.columns(2)
+            with col1:
+                locations = ['All'] + sorted(forecasts['location'].unique().tolist()) if 'location' in forecasts.columns else ['All']
+                selected_location = st.selectbox("Select Location", locations, key="ai_location")
+            with col2:
+                items = ['All'] + sorted(forecasts['item'].unique().tolist()) if 'item' in forecasts.columns else ['All']
+                selected_item = st.selectbox("Select Item", items, key="ai_item")
+            
+            # Filter data
+            filtered_forecasts = forecasts.copy()
+            if selected_location != 'All':
+                filtered_forecasts = filtered_forecasts[filtered_forecasts['location'] == selected_location]
+            if selected_item != 'All':
+                filtered_forecasts = filtered_forecasts[filtered_forecasts['item'] == selected_item]
+            
+            if not filtered_forecasts.empty:
+                # Create line chart
+                fig = px.line(
+                    filtered_forecasts,
+                    x='forecast_date',
+                    y='forecasted_usage',
+                    color='item' if selected_location != 'All' else 'location',
+                    title=f"Seasonal Forecast - {selected_location} - {selected_item}",
+                    labels={'forecasted_usage': 'Forecasted Usage', 'forecast_date': 'Date'},
+                    markers=True
+                )
+                fig.update_layout(
+                    height=400,
+                    font=dict(family="Segoe UI, sans-serif", color="#0F4C81"),
+                    title_font=dict(size=18, color="#0F4C81"),
+                    plot_bgcolor='#FFFFFF',
+                    paper_bgcolor='#F0F2F6',
+                    hovermode='x unified'
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Show seasonal factors
+                if 'seasonal_factor' in filtered_forecasts.columns:
+                    st.markdown("#### Seasonal Adjustment Factors")
+                    st.markdown("Values > 1.0 indicate higher demand, < 1.0 indicate lower demand")
+                    
+                    fig2 = px.bar(
+                        filtered_forecasts,
+                        x='forecast_date',
+                        y='seasonal_factor',
+                        color='seasonal_factor',
+                        title="Seasonal Demand Patterns",
+                        labels={'seasonal_factor': 'Seasonal Factor', 'forecast_date': 'Date'},
+                        color_continuous_scale=[[0, '#DC143C'], [0.5, '#FFA500'], [1, '#29B5E8']]
+                    )
+                    fig2.update_layout(
+                        height=300,
+                        font=dict(family="Segoe UI, sans-serif", color="#0F4C81"),
+                        plot_bgcolor='#FFFFFF',
+                        paper_bgcolor='#F0F2F6'
+                    )
+                    st.plotly_chart(fig2, use_container_width=True)
+            else:
+                st.info("No forecast data available for the selected filters.")
+        
+        with tab2:
+            st.markdown("### Forecast Data Table")
+            st.dataframe(
+                forecasts,
+                use_container_width=True,
+                height=400
+            )
+            
+            # Download button
+            csv = forecasts.to_csv(index=False)
+            from datetime import datetime
+            st.download_button(
+                label="📥 Download Forecast Data (CSV)",
+                data=csv,
+                file_name=f"seasonal_forecasts_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                use_container_width=True,
+                type="primary"
+            )
+    else:
+        st.info("🤖 AI/ML forecasts are being generated. Please run the seasonal forecasting script to populate data.")
         st.markdown("""
-        - **Cortex AI Demand Forecasting**  
-          Predict future demand using Snowflake's native ML
-        - **Anomaly Detection**  
-          Identify unusual usage patterns
-        """)
-    with col2:
-        st.markdown("""
-        - **Seasonal Trend Analysis**  
-          Recognize holiday spikes and patterns
-        - **Predictive Analytics**  
-          Forecast stockouts before they happen
+        ### Available AI/ML Features
+        
+        **🔮 Seasonal Pattern Recognition**
+        - Analyzes weekly and monthly usage patterns
+        - Identifies high/low demand days
+        - Generates seasonally-adjusted forecasts
+        
+        **📊 To Generate Forecasts:**
+        ```bash
+        python python/seasonal_forecaster.py
+        ```
+        
+        **📈 Coming Soon:**
+        - Cortex AI demand forecasting
+        - Anomaly detection alerts
+        - Predictive stock-out warnings
         """)
 
 # ============================================================================
