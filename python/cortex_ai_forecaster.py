@@ -40,20 +40,20 @@ class CortexAIForecaster:
             SELECT
                 location,
                 item,
-                record_date,
-                issued as actual_usage,
+                last_updated_date as record_date,
+                issued_qty as actual_usage,
                 SNOWFLAKE.ML.FORECAST(
-                    issued,
-                    record_date
+                    issued_qty,
+                    last_updated_date
                 ) OVER (
                     PARTITION BY location, item
-                    ORDER BY record_date
+                    ORDER BY last_updated_date
                     ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
                 ) as forecasted_usage
-            FROM stock_raw
+            FROM RAW_STOCK
             WHERE location = '{location}'
             AND item = '{item}'
-            ORDER BY record_date
+            ORDER BY last_updated_date
             """
             
             result = self.session.sql(forecast_query).to_pandas()
@@ -78,11 +78,11 @@ class CortexAIForecaster:
         
         # Get historical data
         data = self.session.sql(f"""
-            SELECT record_date, issued
-            FROM stock_raw
+            SELECT last_updated_date as record_date, issued_qty as issued
+            FROM RAW_STOCK
             WHERE location = '{location}'
             AND item = '{item}'
-            ORDER BY record_date
+            ORDER BY last_updated_date
         """).to_pandas()
         
         if data.empty:
@@ -114,7 +114,7 @@ class CortexAIForecaster:
         # Get all unique location-item combinations
         combinations = self.session.sql("""
             SELECT DISTINCT location, item
-            FROM stock_raw
+            FROM RAW_STOCK
         """).collect()
         
         all_forecasts = []

@@ -28,10 +28,10 @@ class SeasonalForecaster:
         
         weekly_query = """
         SELECT
-            location,
-            item,
-            DAYOFWEEK(record_date) as day_of_week,
-            CASE DAYOFWEEK(record_date)
+            "location",
+            "item",
+            DAYOFWEEK("last_updated_date") as day_of_week,
+            CASE DAYOFWEEK("last_updated_date")
                 WHEN 0 THEN 'Sunday'
                 WHEN 1 THEN 'Monday'
                 WHEN 2 THEN 'Tuesday'
@@ -40,16 +40,16 @@ class SeasonalForecaster:
                 WHEN 5 THEN 'Friday'
                 WHEN 6 THEN 'Saturday'
             END as day_name,
-            AVG(issued) as avg_usage,
-            STDDEV(issued) as stddev_usage,
+            AVG("issued_qty") as avg_usage,
+            STDDEV("issued_qty") as stddev_usage,
             COUNT(*) as data_points,
             CASE
-                WHEN DAYOFWEEK(record_date) IN (0, 6) THEN 'Weekend'
+                WHEN DAYOFWEEK("last_updated_date") IN (0, 6) THEN 'Weekend'
                 ELSE 'Weekday'
             END as day_type
-        FROM stock_raw
-        GROUP BY location, item, day_of_week, day_name, day_type
-        ORDER BY location, item, day_of_week
+        FROM RAW_STOCK
+        GROUP BY "location", "item", day_of_week, day_name, day_type
+        ORDER BY "location", "item", day_of_week
         """
         
         results = self.session.sql(weekly_query).to_pandas()
@@ -57,12 +57,11 @@ class SeasonalForecaster:
         if not results.empty:
             print(f"✅ Analyzed weekly patterns for {len(results)} combinations")
             
-            # Calculate weekend vs weekday difference
-            summary = results.groupby(['LOCATION', 'ITEM', 'DAY_TYPE'])['AVG_USAGE'].mean().unstack()
-            if 'Weekend' in summary.columns and 'Weekday' in summary.columns:
-                summary['Weekend_vs_Weekday_Ratio'] = summary['Weekend'] / summary['Weekday']
-                print("\n📊 Weekend vs Weekday Usage Ratio:")
-                print(summary['Weekend_vs_Weekday_Ratio'].head())
+            # Show sample data
+            if len(results) > 0:
+                print("\n📊 Sample Weekly Patterns:")
+                print(results.head(10))
+            
             
             return results
         else:
@@ -77,10 +76,10 @@ class SeasonalForecaster:
         
         monthly_query = """
         SELECT
-            location,
-            item,
-            MONTH(record_date) as month_num,
-            CASE MONTH(record_date)
+            "location",
+            "item",
+            MONTH("last_updated_date") as month_num,
+            CASE MONTH("last_updated_date")
                 WHEN 1 THEN 'January'
                 WHEN 2 THEN 'February'
                 WHEN 3 THEN 'March'
@@ -94,12 +93,12 @@ class SeasonalForecaster:
                 WHEN 11 THEN 'November'
                 WHEN 12 THEN 'December'
             END as month_name,
-            AVG(issued) as avg_usage,
-            STDDEV(issued) as stddev_usage,
+            AVG("issued_qty") as avg_usage,
+            STDDEV("issued_qty") as stddev_usage,
             COUNT(*) as data_points
-        FROM stock_raw
-        GROUP BY location, item, month_num, month_name
-        ORDER BY location, item, month_num
+        FROM RAW_STOCK
+        GROUP BY "location", "item", month_num, month_name
+        ORDER BY "location", "item", month_num
         """
         
         results = self.session.sql(monthly_query).to_pandas()
@@ -120,25 +119,25 @@ class SeasonalForecaster:
         trend_query = """
         WITH monthly_stats AS (
             SELECT
-                location,
-                item,
-                MONTH(record_date) as month_num,
-                AVG(issued) as avg_usage
-            FROM stock_raw
-            GROUP BY location, item, month_num
+                "location",
+                "item",
+                MONTH("last_updated_date") as month_num,
+                AVG("issued_qty") as avg_usage
+            FROM RAW_STOCK
+            GROUP BY "location", "item", month_num
         ),
         overall_stats AS (
             SELECT
-                location,
-                item,
+                "location",
+                "item",
                 AVG(avg_usage) as overall_avg,
                 STDDEV(avg_usage) as seasonal_variation
             FROM monthly_stats
-            GROUP BY location, item
+            GROUP BY "location", "item"
         )
         SELECT
-            location,
-            item,
+            "location",
+            "item",
             overall_avg,
             seasonal_variation,
             CASE
@@ -160,8 +159,7 @@ class SeasonalForecaster:
             # Show items with high seasonality
             high_seasonal = results[results['SEASONALITY_LEVEL'] == 'HIGH_SEASONALITY']
             if not high_seasonal.empty:
-                print(f"\n📈 {len(high_seasonal)} items have HIGH seasonality:")
-                print(high_seasonal[['LOCATION', 'ITEM', 'COEFFICIENT_OF_VARIATION']].head())
+                print(f"\n📈 {len(high_seasonal)} items have HIGH seasonality")
             
             return results
         else:
@@ -182,14 +180,14 @@ class SeasonalForecaster:
         # Get historical data with day of week
         historical_query = f"""
         SELECT
-            record_date,
-            issued,
-            DAYOFWEEK(record_date) as day_of_week,
-            MONTH(record_date) as month_num
-        FROM stock_raw
-        WHERE location = '{location}'
-        AND item = '{item}'
-        ORDER BY record_date
+            "last_updated_date" as record_date,
+            "issued_qty" as issued,
+            DAYOFWEEK("last_updated_date") as day_of_week,
+            MONTH("last_updated_date") as month_num
+        FROM RAW_STOCK
+        WHERE "location" = '{location}'
+        AND "item" = '{item}'
+        ORDER BY "last_updated_date"
         """
         
         historical = self.session.sql(historical_query).to_pandas()
@@ -245,15 +243,15 @@ class SeasonalForecaster:
         
         # Get all location-item combinations
         combinations = self.session.sql("""
-            SELECT DISTINCT location, item
-            FROM stock_raw
+            SELECT DISTINCT "location", "item"
+            FROM RAW_STOCK
         """).collect()
         
         all_forecasts = []
         
         for row in combinations:
-            location = row['LOCATION']
-            item = row['ITEM']
+            location = row['location']
+            item = row['item']
             
             forecast = self.create_seasonal_forecast(location, item, forecast_days)
             if forecast is not None:

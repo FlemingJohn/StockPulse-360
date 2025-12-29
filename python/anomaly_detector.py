@@ -34,15 +34,15 @@ class AnomalyDetector:
             SELECT
                 location,
                 item,
-                record_date,
-                issued,
-                AVG(issued) OVER (
+                last_updated_date as record_date,
+                issued_qty as issued,
+                AVG(issued_qty) OVER (
                     PARTITION BY location, item
                 ) as avg_usage,
-                STDDEV(issued) OVER (
+                STDDEV(issued_qty) OVER (
                     PARTITION BY location, item
                 ) as stddev_usage
-            FROM stock_raw
+            FROM RAW_STOCK
         )
         SELECT
             location,
@@ -92,18 +92,18 @@ class AnomalyDetector:
             SELECT
                 location,
                 item,
-                record_date,
-                closing_stock,
-                LAG(closing_stock) OVER (
+                last_updated_date as record_date,
+                current_stock as closing_stock,
+                LAG(current_stock) OVER (
                     PARTITION BY location, item
-                    ORDER BY record_date
+                    ORDER BY last_updated_date
                 ) as prev_closing_stock,
-                issued,
-                LAG(issued) OVER (
+                issued_qty as issued,
+                LAG(issued_qty) OVER (
                     PARTITION BY location, item
-                    ORDER BY record_date
+                    ORDER BY last_updated_date
                 ) as prev_issued
-            FROM stock_raw
+            FROM RAW_STOCK
         )
         SELECT
             location,
@@ -155,25 +155,20 @@ class AnomalyDetector:
         SELECT
             location,
             item,
-            record_date,
-            opening_stock,
-            received,
-            issued,
-            closing_stock,
+            last_updated_date as record_date,
+            current_stock,
+            received_qty as received,
+            issued_qty as issued,
             CASE
-                WHEN closing_stock < 0 THEN 'NEGATIVE_STOCK'
-                WHEN opening_stock < 0 THEN 'NEGATIVE_OPENING'
-                WHEN received < 0 THEN 'NEGATIVE_RECEIVED'
-                WHEN issued < 0 THEN 'NEGATIVE_ISSUED'
-                WHEN ABS((opening_stock + received - issued) - closing_stock) > 0.01
-                THEN 'CALCULATION_MISMATCH'
-                WHEN issued > (opening_stock + received)
-                THEN 'OVER_ISSUED'
+                WHEN current_stock < 0 THEN 'NEGATIVE_STOCK'
+                WHEN received_qty < 0 THEN 'NEGATIVE_RECEIVED'
+                WHEN issued_qty < 0 THEN 'NEGATIVE_ISSUED'
+                WHEN issued_qty > current_stock THEN 'OVER_ISSUED'
                 ELSE 'OK'
             END as quality_issue,
-            (opening_stock + received - issued) as calculated_closing,
-            closing_stock - (opening_stock + received - issued) as discrepancy
-        FROM stock_raw
+            current_stock,
+            0 as discrepancy
+        FROM RAW_STOCK
         WHERE quality_issue != 'OK'
         ORDER BY record_date DESC
         """
@@ -199,10 +194,10 @@ class AnomalyDetector:
             SELECT
                 location,
                 item,
-                record_date,
-                closing_stock,
-                CASE WHEN closing_stock <= 0 THEN 1 ELSE 0 END as is_stockout
-            FROM stock_raw
+                last_updated_date as record_date,
+                current_stock,
+                CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END as is_stockout
+            FROM RAW_STOCK
         )
         SELECT
             location,
