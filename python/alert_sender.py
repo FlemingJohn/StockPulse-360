@@ -20,7 +20,21 @@ class AlertSender:
     
     def __init__(self, session: Session):
         self.session = session
-        self.alert_channels = ['console']  # Add 'email', 'slack', 'webhook' as needed
+        self._load_config()
+    
+    def _load_config(self):
+        """Load notification config from environment."""
+        from dotenv import load_dotenv
+        import os
+        load_dotenv()
+        
+        self.alert_channels = ['console']
+        if os.getenv("EMAIL_NOTIFICATIONS_ENABLED", "false").lower() == "true":
+            self.alert_channels.append('email')
+        if os.getenv("SLACK_NOTIFICATIONS_ENABLED", "false").lower() == "true":
+            self.alert_channels.append('slack')
+        
+        print(f"📡 Alert Sender initialized with channels: {', '.join(self.alert_channels)}")
     
     def fetch_critical_alerts(self):
         """
@@ -28,13 +42,14 @@ class AlertSender:
         """
         print("🔍 Fetching critical alerts...")
         
+        # Use uppercase column names to match Snowflake table exactly
         alerts_df = self.session.table("critical_alerts").to_pandas()
         
         if alerts_df.empty:
             print("✅ No critical alerts - all stock levels are healthy!")
             return None
         
-        print(f"⚠️ Found {len(alerts_df)} alerts")
+        print(f"⚠️ Found {len(alerts_df)} active alerts")
         return alerts_df
     
     def fetch_unacknowledged_alerts(self):
@@ -75,31 +90,34 @@ class AlertSender:
     def send_alerts(self, alerts_df: pd.DataFrame):
         """
         Send alerts through configured channels.
+        Filters for OUT_OF_STOCK and CRITICAL statuses for Email and Slack.
         """
         if alerts_df is None or alerts_df.empty:
             return
         
-        print(f"\n📤 Sending {len(alerts_df)} alerts...")
+        # High priority items for external notifications
+        critical_mask = alerts_df['STOCK_STATUS'].isin(['OUT_OF_STOCK', 'CRITICAL', 'WARNING'])
+        critical_alerts = alerts_df[critical_mask]
+
+        print(f"\n📤 Processing {len(alerts_df)} alerts ({len(critical_alerts)} high priority)...")
         
-        # Always show console alerts
+        # 1. Console Output (All alerts)
         if 'console' in self.alert_channels:
             self._send_console_alerts(alerts_df)
         
-        # Send email notifications
-        if 'email' in self.alert_channels:
+        # 2. Email Notifications (Critical only)
+        if 'email' in self.alert_channels and not critical_alerts.empty:
             try:
                 from email_notifier import EmailNotifier
-                email_notifier = EmailNotifier()
-                email_notifier.send_alert_email(alerts_df)
+                EmailNotifier().send_alert_email(critical_alerts)
             except Exception as e:
                 print(f"⚠️ Email notification failed: {e}")
         
-        # Send Slack notifications
-        if 'slack' in self.alert_channels:
+        # 3. Slack Notifications (Critical only)
+        if 'slack' in self.alert_channels and not critical_alerts.empty:
             try:
                 from slack_notifier import SlackNotifier
-                slack_notifier = SlackNotifier()
-                slack_notifier.send_alert_message(alerts_df)
+                SlackNotifier().send_alert_message(critical_alerts)
             except Exception as e:
                 print(f"⚠️ Slack notification failed: {e}")
         
@@ -125,7 +143,8 @@ class AlertSender:
         print("=" * 80)
         
         for idx, alert in alerts_df.iterrows():
-            status = alert.get('stock_status') or alert.get('alert_type', 'UNKNOWN')
+            # Standardize status key (View usually has STOCK_STATUS)
+            status = alert.get('STOCK_STATUS') or alert.get('ALERT_TYPE', 'UNKNOWN')
             
             # Color coding
             if status == 'OUT_OF_STOCK':
@@ -138,28 +157,32 @@ class AlertSender:
                 icon = "ℹ️"
             
             print(f"\n{icon} Alert #{idx + 1}")
-            print(f"   Location: {alert['location']}")
-            print(f"   Item: {alert['item']}")
+            print(f"   Location: {alert.get('LOCATION', 'N/A')}")
+            print(f"   Item: {alert.get('ITEM', 'N/A')}")
             print(f"   Status: {status}")
             
-            if 'alert_message' in alert:
-                print(f"   Message: {alert['alert_message']}")
+            if 'ALERT_MESSAGE' in alert:
+                print(f"   Message: {alert['ALERT_MESSAGE']}")
             
-            if 'days_left' in alert and pd.notna(alert['days_left']):
-                print(f"   Days Until Stock-Out: {alert['days_left']:.1f}")
+            # Use DAYS_UNTIL_STOCKOUT to match view schema
+            days_left = alert.get('DAYS_UNTIL_STOCKOUT') or alert.get('DAYS_LEFT')
+            if pd.notna(days_left):
+                print(f"   Days Until Stock-Out: {float(days_left):.1f}")
             
-            if 'current_stock' in alert:
-                print(f"   Current Stock: {alert['current_stock']}")
+            if 'CURRENT_STOCK' in alert:
+                print(f"   Current Stock: {alert['CURRENT_STOCK']}")
             
-            if 'avg_daily_usage' in alert:
-                print(f"   Avg Daily Usage: {alert['avg_daily_usage']:.2f}")
+            if 'AVG_DAILY_USAGE' in alert:
+                print(f"   Avg Daily Usage: {alert['AVG_DAILY_USAGE']:.2f}")
             
-            if 'recommended_reorder_qty' in alert and pd.notna(alert['recommended_reorder_qty']):
-                print(f"   Recommended Reorder: {alert['recommended_reorder_qty']:.0f} units")
+            # Use REORDER_QUANTITY to match view schema
+            reorder_qty = alert.get('REORDER_QUANTITY') or alert.get('RECOMMENDED_REORDER_QTY')
+            if pd.notna(reorder_qty):
+                print(f"   Recommended Reorder: {float(reorder_qty):.0f} units")
         
         print("\n" + "=" * 80)
     
-    def get_alert_summary(self):
+    def acknowledge_alert(self, alert_id, acknowledged_by="System"):
         """
         Mark an alert as acknowledged.
         """

@@ -12,6 +12,8 @@ from utils import get_svg_icon, section_header, load_stock_risk_data, load_criti
 from utils import load_procurement_export, load_item_performance, get_status_color, load_seasonal_forecasts, load_abc_analysis
 from utils import load_stockout_impact, load_budget_tracking
 from utils import load_purchase_orders, load_supplier_performance, load_supplier_comparison, load_supplier_cost_analysis, load_delivery_schedule
+from alert_sender import AlertSender
+from config import get_snowflake_session
 
 # Streamlit extras for enhanced UI
 try:
@@ -201,8 +203,25 @@ def render_alerts_page(filtered_data):
     alerts_data = load_critical_alerts()
     
     if alerts_data is not None and not alerts_data.empty:
-        critical_alerts = alerts_data[alerts_data['STOCK_STATUS'].isin(['OUT_OF_STOCK', 'CRITICAL'])]
-        warning_alerts = alerts_data[alerts_data['STOCK_STATUS'] == 'WARNING']
+        # Filter section
+        st.markdown('<div class="filter-container">', unsafe_allow_html=True)
+        f_col1, f_col2 = st.columns(2)
+        with f_col1:
+            all_locations = sorted(alerts_data['LOCATION'].unique())
+            sel_locations = st.multiselect("📍 Filter by Location", all_locations, default=all_locations)
+        with f_col2:
+            all_statuses = sorted(alerts_data['STOCK_STATUS'].unique())
+            sel_statuses = st.multiselect("⚠️ Filter by Status", all_statuses, default=all_statuses)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Apply filters
+        filtered_df = alerts_data[
+            (alerts_data['LOCATION'].isin(sel_locations)) & 
+            (alerts_data['STOCK_STATUS'].isin(sel_statuses))
+        ]
+        
+        critical_alerts = filtered_df[filtered_df['STOCK_STATUS'].isin(['OUT_OF_STOCK', 'CRITICAL'])]
+        warning_alerts = filtered_df[filtered_df['STOCK_STATUS'] == 'WARNING']
         
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -212,8 +231,25 @@ def render_alerts_page(filtered_data):
             st.metric("🟡 Warning Alerts", len(warning_alerts),
                      help="Items approaching low stock threshold")
         with col3:
-            st.metric("📋 Total Alerts", len(alerts_data),
-                     help="All active alerts")
+            st.metric("📋 Total Alerts", len(filtered_df),
+                     help="Active alerts matching filters")
+        
+        # Action Buttons
+        button_col1, button_col2 = st.columns([1, 4])
+        with button_col1:
+            if not filtered_df.empty:
+                if st.button("📤 Notify Procurement", help="Send the filtered alerts to Email and Slack"):
+                    with st.spinner("Sending notifications..."):
+                        try:
+                            session = get_snowflake_session()
+                            sender = AlertSender(session)
+                            sender.send_alerts(filtered_df)
+                            session.close()
+                            st.success(f"Notifications for {len(filtered_df)} items delivered!")
+                        except Exception as e:
+                            st.error(f"Failed to send notifications: {e}")
+            else:
+                st.button("📤 Notify Procurement", disabled=True)
         
         if EXTRAS_AVAILABLE:
             style_metric_cards(
@@ -225,28 +261,48 @@ def render_alerts_page(filtered_data):
         
         st.divider()
         
-        # Alert cards with enhanced styling
-        for idx, alert in alerts_data.iterrows():
+        if filtered_df.empty:
+            st.info("No alerts match the selected filters.")
+        else:
+            # Alert cards with enhanced styling
+            for idx, alert in filtered_df.iterrows():
             status = alert['STOCK_STATUS']
             css_class = "critical-alert" if status in ['OUT_OF_STOCK', 'CRITICAL'] else "warning-alert"
-            alert_svg = get_svg_icon('alert', size=20, color="#DC143C" if status in ['OUT_OF_STOCK', 'CRITICAL'] else "#FFA500")
+            alert_color = "#DC143C" if status in ['OUT_OF_STOCK', 'CRITICAL'] else "#FFA500"
+            alert_svg = get_svg_icon('alert', size=24, color=alert_color)
             
-            # Add badge if extras available
-            badge_html = ""
-            if EXTRAS_AVAILABLE:
-                badge_color = "red" if status in ['OUT_OF_STOCK', 'CRITICAL'] else "orange"
-                badge_html = f'<span style="background-color: {badge_color}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 10px;">{status}</span>'
+            # Risk Level Badge
+            risk_badge = f'<span style="background-color: {alert_color}; color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-left: auto;">{status.replace("_", " ")}</span>'
             
             st.markdown(f"""
             <div class="{css_class}">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    {alert_svg}
-                    <strong>{alert['ALERT_MESSAGE']}</strong>
-                    {badge_html}
-                </div>
-                <div style="margin-top: 8px;">
-                    📍 Location: {alert['LOCATION']} | 📦 Item: {alert['ITEM']}<br>
-                    📊 Current Stock: {alert['CURRENT_STOCK']:.0f} | 📉 Avg Daily Usage: {alert['AVG_DAILY_USAGE']:.2f}
+                <div style="display: flex; align-items: flex-start; gap: 15px;">
+                    <div style="background: rgba(255,255,255,0.5); padding: 10px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        {alert_svg}
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                            <span style="font-size: 1.1rem; font-weight: 700; color: #0F4C81;">{alert['ITEM']}</span>
+                            {risk_badge}
+                        </div>
+                        <div style="font-size: 0.95rem; color: #333; margin-bottom: 12px; line-height: 1.4;">
+                            {alert['ALERT_MESSAGE']}
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 15px; background: rgba(255,255,255,0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem;">
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                📍 <span style="font-weight: 600;">{alert['LOCATION']}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                📦 Stock: <span style="font-weight: 600; color: {alert_color};">{alert['CURRENT_STOCK']:.0f} units</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                📉 Usage: <span style="font-weight: 600;">{alert['AVG_DAILY_USAGE']:.1f}/day</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                ⏳ Remaining: <span style="font-weight: 600;">{alert['DAYS_UNTIL_STOCKOUT']:.1f} days</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)

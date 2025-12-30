@@ -62,23 +62,41 @@ CUSTOM_CSS = """
         box-shadow: 0 4px 12px rgba(41, 181, 232, 0.2);
     }
     
-    /* Alert Cards */
+    /* Alert Cards - Premium Glassmorphism */
     .critical-alert {
-        background: linear-gradient(135deg, #FFF5F5 0%, #FFE6E6 100%);
-        padding: 1.2rem;
-        border-radius: 12px;
-        border-left: 5px solid #DC143C;
-        margin-bottom: 0.8rem;
-        box-shadow: 0 2px 6px rgba(220, 20, 60, 0.1);
+        background: rgba(220, 20, 60, 0.05);
+        backdrop-filter: blur(8px);
+        padding: 1.5rem;
+        border-radius: 16px;
+        border: 1px solid rgba(220, 20, 60, 0.2);
+        border-left: 8px solid #DC143C;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 12px rgba(220, 20, 60, 0.08);
+        transition: all 0.3s ease;
+    }
+    
+    .critical-alert:hover {
+        transform: scale(1.01);
+        box-shadow: 0 8px 20px rgba(220, 20, 60, 0.15);
+        background: rgba(220, 20, 60, 0.08);
     }
     
     .warning-alert {
-        background: linear-gradient(135deg, #FFFEF5 0%, #FFF4E6 100%);
-        padding: 1.2rem;
-        border-radius: 12px;
-        border-left: 5px solid #FFA500;
-        margin-bottom: 0.8rem;
-        box-shadow: 0 2px 6px rgba(255, 165, 0, 0.1);
+        background: rgba(255, 165, 0, 0.05);
+        backdrop-filter: blur(8px);
+        padding: 1.5rem;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 165, 0, 0.2);
+        border-left: 8px solid #FFA500;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 12px rgba(255, 165, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .warning-alert:hover {
+        transform: scale(1.01);
+        box-shadow: 0 8px 20px rgba(255, 165, 0, 0.15);
+        background: rgba(255, 165, 0, 0.08);
     }
     
     /* Buttons - Snowflake Style */
