@@ -84,6 +84,54 @@ def get_svg_icon(icon_name, size=24, color="#29B5E8"):
             <line x1="12" y1="1" x2="12" y2="23" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>''',
+        
+        'trophy': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 22h16" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 14.66V17c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2.34" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 2v12.5" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 4v7a6 6 0 0 0 12 0V4" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'balance': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="12" y1="3" x2="12" y2="21" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="7" y1="13" x2="17" y2="13" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 13c0 2.21 1.79 4 4 4s4-1.79 4-4" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13 13c0 2.21 1.79 4 4 4s4-1.79 4-4" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 3L7 13" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 3L17 13" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'calendar': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="16" y1="2" x2="16" y2="6" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="8" y1="2" x2="8" y2="6" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="3" y1="10" x2="21" y2="10" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'upload': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="17 8 12 3 7 8" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="3" x2="12" y2="15" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'download': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="7 10 12 15 17 10" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="15" x2="12" y2="3" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'check': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polyline points="20 6 9 17 4 12" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
+        
+        'hourglass': f'''<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 22h14" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 2h14" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M17 22v-4.17c0-.53-.21-1.04-.58-1.42L12 12l-4.42 4.41c-.37.38-.58.89-.58 1.42V22" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 2v4.17c0 .53.21 1.04.58 1.42L12 12l4.42-4.41c.37-.38.58-.89.58-1.42V2" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>''',
     }
     return icons.get(icon_name, '')
 

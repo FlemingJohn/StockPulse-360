@@ -27,7 +27,6 @@ st.session_state['session'] = session
 from styles import CUSTOM_CSS
 from utils import get_svg_icon, section_header
 from pages import (
-    render_filters,
     render_overview_page,
     render_alerts_page,
     render_reorder_page,
@@ -41,7 +40,7 @@ from pages import (
 # ============================================================================
 st.set_page_config(
     page_title="StockPulse 360",
-    page_icon="🔷",
+    page_icon="S",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -118,22 +117,19 @@ def main():
             """)
     
     # Main Content Area
-    # Filters (always visible)
-    filtered_data = render_filters()
-    
     st.divider()
     
     # Conditional Page Rendering based on Navigation
     if selected_page == "Overview & Heatmap":
-        render_overview_page(filtered_data)
+        render_overview_page()
     elif selected_page == "Critical Alerts":
-        render_alerts_page(filtered_data)
+        render_alerts_page()
     elif selected_page == "Reorder Recommendations":
-        render_reorder_page(filtered_data)
+        render_reorder_page()
     elif selected_page == "AI/ML Insights":
-        render_ai_ml_page(filtered_data)
+        render_ai_ml_page()
     elif selected_page == "Advanced Analytics":
-        render_analytics_page(filtered_data)
+        render_analytics_page()
     elif selected_page == "Supplier Management":
         render_supplier_page()
     

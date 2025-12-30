@@ -29,66 +29,69 @@ except ImportError:
 # Filter Component
 # ============================================================================
 
-def render_filters():
-    """Render filter section in main page."""
-    st.markdown('<div class="filter-container">', unsafe_allow_html=True)
-    st.markdown(section_header("Filters", "filter"), unsafe_allow_html=True)
+# Helper for page-specific filters
+def render_page_sidebar_filters(df, page_name=""):
+    """Render common sidebar filters (Location/Item) for a specific page."""
+    if df is None or df.empty:
+        return df
+        
+    st.sidebar.markdown(section_header(f"{page_name} Filters", "filter"), unsafe_allow_html=True)
     
-    # Load data for filters
-    stock_data = load_stock_risk_data()
+    # Location Filter
+    filtered_df = df.copy()
+    if 'LOCATION' in df.columns:
+        loc_options = ['All'] + sorted(df['LOCATION'].unique().tolist())
+        selected_loc = st.sidebar.selectbox("Location", loc_options, key=f"filter_loc_{page_name}")
+        if selected_loc != 'All':
+            filtered_df = filtered_df[filtered_df['LOCATION'] == selected_loc]
+            
+    # Item Filter
+    if 'ITEM' in df.columns:
+        item_options = ['All'] + sorted(filtered_df['ITEM'].unique().tolist())
+        selected_item = st.sidebar.selectbox("Item", item_options, key=f"filter_item_{page_name}")
+        if selected_item != 'All':
+            filtered_df = filtered_df[filtered_df['ITEM'] == selected_item]
+            
+    return filtered_df
+
+def apply_sidebar_logic_to_performance(perf_df, filtered_po_df):
+    """Filter performance data to match the suppliers in the filtered PO data."""
+    if perf_df is None or perf_df.empty or filtered_po_df is None or filtered_po_df.empty:
+        return perf_df
     
-    if stock_data is None or stock_data.empty:
-        st.error("Unable to load data. Please check your Snowflake connection.")
-        st.markdown('</div>', unsafe_allow_html=True)
-        return pd.DataFrame()
-    
-    col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
-    
-    with col1:
-        locations = ['All'] + sorted(stock_data['LOCATION'].unique().tolist())
-        selected_location = st.selectbox("Location", locations, key="filter_location")
-    
-    with col2:
-        items = ['All'] + sorted(stock_data['ITEM'].unique().tolist())
-        selected_item = st.selectbox("Item", items, key="filter_item")
-    
-    with col3:
-        status_options = ['All', 'OUT_OF_STOCK', 'CRITICAL', 'WARNING', 'LOW', 'HEALTHY']
-        selected_status = st.multiselect("Status", status_options, default=['All'], key="filter_status")
-    
-    with col4:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Clear Filters", use_container_width=True):
-            st.rerun()
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Apply filters
-    filtered_data = stock_data.copy()
-    if selected_location != 'All':
-        filtered_data = filtered_data[filtered_data['LOCATION'] == selected_location]
-    if selected_item != 'All':
-        filtered_data = filtered_data[filtered_data['ITEM'] == selected_item]
-    if 'All' not in selected_status:
-        filtered_data = filtered_data[filtered_data['STOCK_STATUS'].isin(selected_status)]
-    
-    return filtered_data
+    # Get unique suppliers from filtered POs
+    valid_suppliers = filtered_po_df['SUPPLIER_NAME'].unique()
+    return perf_df[perf_df['SUPPLIER_NAME'].isin(valid_suppliers)]
 
 # ============================================================================
 # Page: Overview & Heatmap
 # ============================================================================
 
-def render_overview_page(filtered_data):
-    """Render Overview & Heatmap page."""
-    # Check if data is available
+def render_overview_page():
+    """Render Overview & Heatmap page with its own filters."""
+    # Load raw data
+    stock_data = load_stock_risk_data()
+    
+    # Sidebar Filters
+    filtered_data = render_page_sidebar_filters(stock_data, "Overview")
+    
+    # Additional Status Filter for Overview
+    if not filtered_data.empty and 'STOCK_STATUS' in filtered_data.columns:
+        st.sidebar.markdown("<br>", unsafe_allow_html=True)
+        status_options = ['All'] + sorted(filtered_data['STOCK_STATUS'].unique().tolist())
+        selected_status = st.sidebar.multiselect("Stock Status", status_options, default=['All'], key="ov_status")
+        if 'All' not in selected_status and selected_status:
+            filtered_data = filtered_data[filtered_data['STOCK_STATUS'].isin(selected_status)]
+
+    # Check if data is available after filtering
     if filtered_data is None or filtered_data.empty:
-        st.warning("No data available. Please check your Snowflake connection and ensure tables are populated.")
+        st.warning("No data available for the selected filters.")
         return
     
     # KPI Metrics with enhanced styling
     if EXTRAS_AVAILABLE:
         colored_header(
-            label="📊 Key Performance Metrics",
+            label="Key Performance Metrics",
             description="Real-time stock health indicators",
             color_name="blue-70"
         )
@@ -187,11 +190,25 @@ def render_overview_page(filtered_data):
 # Page: Critical Alerts
 # ============================================================================
 
-def render_alerts_page(filtered_data):
-    """Render Critical Alerts page."""
+def render_alerts_page():
+    """Render Critical Alerts page with its own independent filters."""
+    # Load raw alerts data
+    alerts_data = load_critical_alerts()
+    
+    # Sidebar Filters
+    filtered_data = render_page_sidebar_filters(alerts_data, "Alerts")
+    
+    # Status Multi-select for Alerts
+    if not filtered_data.empty:
+        st.sidebar.markdown("<br>", unsafe_allow_html=True)
+        status_options = sorted(alerts_data['STOCK_STATUS'].unique().tolist())
+        selected_status = st.sidebar.multiselect("Filter by Status", status_options, default=status_options, key="alert_status_filter")
+        if selected_status:
+            filtered_data = filtered_data[filtered_data['STOCK_STATUS'].isin(selected_status)]
+    
     if EXTRAS_AVAILABLE:
         colored_header(
-            label="🚨 Critical Alerts Dashboard",
+            label="Critical Alerts Dashboard",
             description="Real-time stock alerts and notifications",
             color_name="red-70"
         )
@@ -200,52 +217,33 @@ def render_alerts_page(filtered_data):
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    alerts_data = load_critical_alerts()
-    
-    if alerts_data is not None and not alerts_data.empty:
-        # Filter section
-        st.markdown('<div class="filter-container">', unsafe_allow_html=True)
-        f_col1, f_col2 = st.columns(2)
-        with f_col1:
-            all_locations = sorted(alerts_data['LOCATION'].unique())
-            sel_locations = st.multiselect("📍 Filter by Location", all_locations, default=all_locations)
-        with f_col2:
-            all_statuses = sorted(alerts_data['STOCK_STATUS'].unique())
-            sel_statuses = st.multiselect("⚠️ Filter by Status", all_statuses, default=all_statuses)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Apply filters
-        filtered_df = alerts_data[
-            (alerts_data['LOCATION'].isin(sel_locations)) & 
-            (alerts_data['STOCK_STATUS'].isin(sel_statuses))
-        ]
-        
-        critical_alerts = filtered_df[filtered_df['STOCK_STATUS'].isin(['OUT_OF_STOCK', 'CRITICAL'])]
-        warning_alerts = filtered_df[filtered_df['STOCK_STATUS'] == 'WARNING']
+    if filtered_data is not None and not filtered_data.empty:
+        critical_alerts = filtered_data[filtered_data['STOCK_STATUS'].isin(['OUT_OF_STOCK', 'CRITICAL'])]
+        warning_alerts = filtered_data[filtered_data['STOCK_STATUS'] == 'WARNING']
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("🔴 Critical Alerts", len(critical_alerts), 
+            st.metric("Critical Alerts", len(critical_alerts), 
                      help="Out of stock or critically low items")
         with col2:
-            st.metric("🟡 Warning Alerts", len(warning_alerts),
+            st.metric("Warning Alerts", len(warning_alerts),
                      help="Items approaching low stock threshold")
         with col3:
-            st.metric("📋 Total Alerts", len(filtered_df),
+            st.metric("Total Alerts", len(filtered_data),
                      help="Active alerts matching filters")
         
         # Action Buttons
         button_col1, button_col2 = st.columns([1, 4])
         with button_col1:
-            if not filtered_df.empty:
+            if not filtered_data.empty:
                 if st.button("📤 Notify Procurement", help="Send the filtered alerts to Email and Slack"):
                     with st.spinner("Sending notifications..."):
                         try:
                             session = get_snowflake_session()
                             sender = AlertSender(session)
-                            sender.send_alerts(filtered_df)
+                            sender.send_alerts(filtered_data)
                             session.close()
-                            st.success(f"Notifications for {len(filtered_df)} items delivered!")
+                            st.success(f"Notifications for {len(filtered_data)} items delivered!")
                         except Exception as e:
                             st.error(f"Failed to send notifications: {e}")
             else:
@@ -261,63 +259,69 @@ def render_alerts_page(filtered_data):
         
         st.divider()
         
-        if filtered_df.empty:
+        if filtered_data.empty:
             st.info("No alerts match the selected filters.")
         else:
             # Alert cards with enhanced styling
-            for idx, alert in filtered_df.iterrows():
-            status = alert['STOCK_STATUS']
-            css_class = "critical-alert" if status in ['OUT_OF_STOCK', 'CRITICAL'] else "warning-alert"
-            alert_color = "#DC143C" if status in ['OUT_OF_STOCK', 'CRITICAL'] else "#FFA500"
-            alert_svg = get_svg_icon('alert', size=24, color=alert_color)
-            
-            # Risk Level Badge
-            risk_badge = f'<span style="background-color: {alert_color}; color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-left: auto;">{status.replace("_", " ")}</span>'
-            
-            st.markdown(f"""
-            <div class="{css_class}">
-                <div style="display: flex; align-items: flex-start; gap: 15px;">
-                    <div style="background: rgba(255,255,255,0.5); padding: 10px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                        {alert_svg}
-                    </div>
-                    <div style="flex-grow: 1;">
-                        <div style="display: flex; align-items: center; margin-bottom: 5px;">
-                            <span style="font-size: 1.1rem; font-weight: 700; color: #0F4C81;">{alert['ITEM']}</span>
-                            {risk_badge}
+            for idx, alert in filtered_data.iterrows():
+                status = alert['STOCK_STATUS']
+                css_class = "critical-alert" if status in ['OUT_OF_STOCK', 'CRITICAL'] else "warning-alert"
+                alert_color = "#DC143C" if status in ['OUT_OF_STOCK', 'CRITICAL'] else "#FFA500"
+                alert_svg = get_svg_icon('alert', size=24, color=alert_color)
+                
+                # Risk Level Badge
+                risk_badge = f'<span style="background-color: {alert_color}; color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-left: auto;">{status.replace("_", " ")}</span>'
+                
+                st.markdown(f"""
+                <div class="{css_class}">
+                    <div style="display: flex; align-items: flex-start; gap: 15px;">
+                        <div style="background: rgba(255,255,255,0.5); padding: 10px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            {alert_svg}
                         </div>
-                        <div style="font-size: 0.95rem; color: #333; margin-bottom: 12px; line-height: 1.4;">
-                            {alert['ALERT_MESSAGE']}
-                        </div>
-                        <div style="display: flex; flex-wrap: wrap; gap: 15px; background: rgba(255,255,255,0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem;">
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                📍 <span style="font-weight: 600;">{alert['LOCATION']}</span>
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                                <span style="font-size: 1.1rem; font-weight: 700; color: #0F4C81;">{alert['ITEM']}</span>
+                                {risk_badge}
                             </div>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                📦 Stock: <span style="font-weight: 600; color: {alert_color};">{alert['CURRENT_STOCK']:.0f} units</span>
+                            <div style="font-size: 0.95rem; color: #333; margin-bottom: 12px; line-height: 1.4;">
+                                {alert['ALERT_MESSAGE']}
                             </div>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                📉 Usage: <span style="font-weight: 600;">{alert['AVG_DAILY_USAGE']:.1f}/day</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                ⏳ Remaining: <span style="font-weight: 600;">{alert['DAYS_UNTIL_STOCKOUT']:.1f} days</span>
+                            <div style="display: flex; flex-wrap: wrap; gap: 15px; background: rgba(255,255,255,0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem;">
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    {get_svg_icon('location', size=14, color="#333")} <span style="font-weight: 600;">{alert['LOCATION']}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    {get_svg_icon('box', size=14, color="#333")} Stock: <span style="font-weight: 600; color: {alert_color};">{alert['CURRENT_STOCK']:.0f} units</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    {get_svg_icon('trending', size=14, color="#333")} Usage: <span style="font-weight: 600;">{alert['AVG_DAILY_USAGE']:.1f}/day</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    {get_svg_icon('hourglass', size=14, color="#333")} Remaining: <span style="font-weight: 600;">{alert['DAYS_UNTIL_STOCKOUT']:.1f} days</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
     else:
-        st.success("✅ No critical alerts - all stock levels are healthy!")
+        st.success("No active critical alerts - all stock levels are healthy!")
 
 # ============================================================================
 # Page: Reorder Recommendations
 # ============================================================================
 
-def render_reorder_page(filtered_data):
-    """Render Reorder Recommendations page."""
+def render_reorder_page():
+    """Render Reorder Recommendations page with its own filters."""
+    # Load raw procurement data
+    procurement_data = load_procurement_export()
+    
+    # Sidebar Filters
+    filtered_data = render_page_sidebar_filters(procurement_data, "Reorder")
+    
     if EXTRAS_AVAILABLE:
         colored_header(
-            label="🛒 Reorder Recommendations",
+            label="Reorder Recommendations",
             description="Smart procurement suggestions based on stock levels",
             color_name="green-70"
         )
@@ -326,9 +330,7 @@ def render_reorder_page(filtered_data):
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    procurement_data = load_procurement_export()
-    
-    if procurement_data is not None and not procurement_data.empty:
+    if filtered_data is not None and not filtered_data.empty:
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("📦 Items to Reorder", len(procurement_data),
@@ -372,7 +374,7 @@ def render_reorder_page(filtered_data):
         
         csv = procurement_data.to_csv(index=False)
         st.download_button(
-            label="📥 Download Procurement List (CSV)",
+            label="Download Procurement List (CSV)",
             data=csv,
             file_name=f"procurement_list_{datetime.now().strftime('%Y%m%d')}.csv",
             mime="text/csv",
@@ -380,21 +382,24 @@ def render_reorder_page(filtered_data):
             type="primary"
         )
     else:
-        st.info("✅ No reorder recommendations at this time.")
+        st.info("No reorder recommendations at this time.")
 
 # ============================================================================
 # Page: AI/ML Insights
 # ============================================================================
 
-def render_ai_ml_page(filtered_data):
-    """Render AI/ML Insights page."""
+def render_ai_ml_page():
+    """Render AI/ML Insights page with independent filters."""
+    # Load raw forecasts
+    forecasts = load_seasonal_forecasts()
+    
+    # Sidebar Filters
+    filtered_data = render_page_sidebar_filters(forecasts, "AI/ML")
+    
     st.markdown(section_header("AI/ML Insights", "trending"), unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Load seasonal forecasts
-    forecasts = load_seasonal_forecasts()
-    
-    if forecasts is not None and not forecasts.empty:
+    if filtered_data is not None and not filtered_data.empty:
         # KPI Metrics
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -413,7 +418,7 @@ def render_ai_ml_page(filtered_data):
         st.divider()
         
         # Tabs for different views
-        tab1, tab2 = st.tabs(["📈 Seasonal Forecasts", "📊 Forecast Data"])
+        tab1, tab2 = st.tabs(["Seasonal Forecasts", "Forecast Data"])
         
         with tab1:
             st.markdown("### Seasonal Usage Forecasts")
@@ -492,7 +497,7 @@ def render_ai_ml_page(filtered_data):
             csv = forecasts.to_csv(index=False)
             from datetime import datetime
             st.download_button(
-                label="📥 Download Forecast Data (CSV)",
+                label="Download Forecast Data (CSV)",
                 data=csv,
                 file_name=f"seasonal_forecasts_{datetime.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv",
@@ -500,11 +505,11 @@ def render_ai_ml_page(filtered_data):
                 type="primary"
             )
     else:
-        st.info("🤖 AI/ML forecasts are being generated. Please run the seasonal forecasting script to populate data.")
+        st.info("AI/ML forecasts are being generated. Please run the seasonal forecasting script to populate data.")
         st.markdown("""
         ### Available AI/ML Features
         
-        **🔮 Seasonal Pattern Recognition**
+        **Seasonal Pattern Recognition**
         - Analyzes weekly and monthly usage patterns
         - Identifies high/low demand days
         - Generates seasonally-adjusted forecasts
@@ -524,15 +529,15 @@ def render_ai_ml_page(filtered_data):
 # Page: Advanced Analytics
 # ============================================================================
 
-def render_analytics_page(filtered_data):
+def render_analytics_page():
     """Render Advanced Analytics page."""
     st.markdown(section_header("Advanced Analytics", "chart"), unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    st.info("📊 Advanced analytics including ABC analysis, cost optimization, and stockout impact analysis.")
+    st.info("Advanced analytics including ABC analysis, cost optimization, and stockout impact analysis.")
     
     # Create tabs for different analytics features
-    tab1, tab2, tab3 = st.tabs(["📈 ABC Analysis", "💰 Cost Optimization", "⚠️ Stockout Impact"])
+    tab1, tab2, tab3 = st.tabs(["ABC Analysis", "Cost Optimization", "Stockout Impact"])
     
     with tab1:
         st.markdown("### ABC Analysis")
@@ -625,8 +630,9 @@ def render_analytics_page(filtered_data):
                 st.metric("Remaining Budget", f"₹{row['REMAINING_BUDGET']:,.0f}", 
                          delta=f"{row['BUDGET_UTILIZATION_PCT']:.1f}%")
             with col4:
-                status_emoji = {'HEALTHY': '✅', 'MODERATE': '🟡', 'WARNING': '🟠', 'OVER_BUDGET': '🔴'}
-                st.metric("Budget Status", f"{status_emoji.get(row['BUDGET_STATUS'], '')} {row['BUDGET_STATUS']}")
+                status_icon = {'HEALTHY': 'check', 'MODERATE': 'info', 'WARNING': 'alert', 'OVER_BUDGET': 'alert'}
+                icon_svg = get_svg_icon(status_icon.get(row['BUDGET_STATUS'], 'info'), size=18)
+                st.markdown(f"**Budget Status:** {icon_svg} {row['BUDGET_STATUS']}", unsafe_allow_html=True)
             
             # Budget visualization
             import plotly.graph_objects as go
@@ -736,24 +742,32 @@ def render_analytics_page(filtered_data):
 # ============================================================================
 
 def render_supplier_page():
-    """Render Supplier Management page."""
+    """Render Supplier Management page with independent filters."""
+    # Load raw data
+    po_data = load_purchase_orders()
+    performance_data = load_supplier_performance()
+    
+    # Sidebar Filters
+    filtered_po = render_page_sidebar_filters(po_data, "Supplier PO")
+    filtered_performance = apply_sidebar_logic_to_performance(performance_data, filtered_po)
+    
     st.markdown(section_header("Supplier Management", "box"), unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Load data
-    po_data = load_purchase_orders()
-    performance_data = load_supplier_performance()
-    comparison_data = load_supplier_comparison()
+    # Use filtered data for variables below
+    po_data = filtered_po
+    performance_data = filtered_performance
+    comparison_data = load_supplier_comparison() # Not easily filterable by location/item in current schema
     cost_data = load_supplier_cost_analysis()
     schedule_data = load_delivery_schedule()
     
     # Create tabs
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
-        "📄 Purchase Orders", 
-        "🏆 Performance", 
-        "⚖️ Comparison", 
-        "📅 Delivery Schedule",
-        "💰 Cost Analysis"
+        "Purchase Orders", 
+        "Performance", 
+        "Comparison", 
+        "Delivery Schedule",
+        "Cost Analysis"
     ])
     
     with tab1:
