@@ -65,30 +65,30 @@ WITH best_suppliers AS (
 )
 SELECT
     CONCAT('PO-', TO_CHAR(CURRENT_DATE(), 'YYYYMMDD'), '-', 
-           LPAD(ROW_NUMBER() OVER (ORDER BY r.location, r.item), 4, '0')) AS purchase_order_id,
-    r.location,
-    r.item,
+           LPAD(ROW_NUMBER() OVER (ORDER BY r."location", r."item"), 4, '0')) AS purchase_order_id,
+    r."location" AS location,
+    r."item" AS item,
     s.supplier_id,
     s.supplier_name,
     s.contact_email,
-    r.recommended_order_qty AS order_quantity,
+    r.reorder_quantity AS order_quantity,
     s.unit_price,
-    r.recommended_order_qty * s.unit_price AS total_cost,
+    r.reorder_quantity * s.unit_price AS total_cost,
     s.avg_lead_time_days,
     CURRENT_DATE() AS order_date,
     CURRENT_DATE() + s.avg_lead_time_days AS expected_delivery_date,
-    r.order_urgency_days,
+    r.days_until_stockout AS order_urgency_days,
     CASE
-        WHEN r.order_urgency_days < s.avg_lead_time_days THEN 'URGENT'
-        WHEN r.order_urgency_days < (s.avg_lead_time_days * 1.5) THEN 'NORMAL'
+        WHEN r.days_until_stockout < s.avg_lead_time_days THEN 'URGENT'
+        WHEN r.days_until_stockout < (s.avg_lead_time_days * 1.5) THEN 'NORMAL'
         ELSE 'PLANNED'
     END AS order_priority,
     s.reliability_score,
     h.stock_status,
     CURRENT_TIMESTAMP() AS generated_at
 FROM reorder_recommendations r
-JOIN best_suppliers s ON r.item = s.item AND s.supplier_rank = 1
-JOIN stock_health h ON r.location = h.location AND r.item = h.item;
+JOIN best_suppliers s ON r."item" = s.item AND s.supplier_rank = 1
+JOIN stock_health h ON r."location" = h."location" AND r."item" = h."item";
 
 -- ============================================================================
 -- View 2: Supplier Performance Dashboard

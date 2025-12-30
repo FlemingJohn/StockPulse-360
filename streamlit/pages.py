@@ -11,6 +11,7 @@ from datetime import datetime
 from utils import get_svg_icon, section_header, load_stock_risk_data, load_critical_alerts
 from utils import load_procurement_export, load_item_performance, get_status_color, load_seasonal_forecasts, load_abc_analysis
 from utils import load_stockout_impact, load_budget_tracking
+from utils import load_purchase_orders, load_supplier_performance, load_supplier_comparison, load_supplier_cost_analysis, load_delivery_schedule
 
 # Streamlit extras for enhanced UI
 try:
@@ -683,21 +684,138 @@ def render_supplier_page():
     st.markdown(section_header("Supplier Management", "box"), unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    st.info("Supplier integration features including purchase orders, performance tracking, and delivery schedules.")
+    # Load data
+    po_data = load_purchase_orders()
+    performance_data = load_supplier_performance()
+    comparison_data = load_supplier_comparison()
+    cost_data = load_supplier_cost_analysis()
+    schedule_data = load_delivery_schedule()
     
-    st.markdown("### Features")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("""
-        - **Auto-Generated Purchase Orders**  
-          Smart procurement based on reorder recommendations
-        - **Supplier Performance Dashboard**  
-          Track reliability and lead times
-        """)
-    with col2:
-        st.markdown("""
-        - **Delivery Schedule Tracking**  
-          Monitor expected arrivals
-        - **Cost Analysis by Supplier**  
-          Optimize supplier selection
-        """)
+    # Create tabs
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📄 Purchase Orders", 
+        "🏆 Performance", 
+        "⚖️ Comparison", 
+        "📅 Delivery Schedule",
+        "💰 Cost Analysis"
+    ])
+    
+    with tab1:
+        st.markdown("### Active Purchase Orders")
+        if not po_data.empty:
+            st.dataframe(
+                po_data[['PURCHASE_ORDER_ID', 'LOCATION', 'ITEM', 'SUPPLIER_NAME', 'ORDER_QUANTITY', 'TOTAL_COST', 'ORDER_PRIORITY', 'EXPECTED_DELIVERY_DATE']],
+                use_container_width=True,
+                height=400
+            )
+        else:
+            st.info("No active purchase orders found.")
+            
+    with tab2:
+        st.markdown("### Supplier Performance Metrics")
+        if not performance_data.empty:
+            # KPI Cards
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                avg_reliability = performance_data['RELIABILITY_SCORE'].mean()
+                st.metric("Avg Reliability", f"{avg_reliability:.1f}%")
+            with col2:
+                total_pos = performance_data['TOTAL_ORDERS'].sum()
+                st.metric("Total Orders", f"{total_pos:,.0f}")
+            with col3:
+                on_time_pct = performance_data['ACTUAL_ON_TIME_PCT'].mean()
+                st.metric("On-Time Rate", f"{on_time_pct:.1f}%")
+                
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Reliability Bar Chart
+            fig = px.bar(
+                performance_data,
+                x='SUPPLIER_NAME',
+                y='RELIABILITY_SCORE',
+                color='PERFORMANCE_RATING',
+                title="Supplier Reliability Scores",
+                labels={'RELIABILITY_SCORE': 'Reliability (%)', 'SUPPLIER_NAME': 'Supplier'},
+                color_discrete_map={'EXCELLENT': '#32CD32', 'GOOD': '#29B5E8', 'AVERAGE': '#FFA500', 'POOR': '#DC143C'}
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            st.dataframe(performance_data, use_container_width=True)
+        else:
+            st.info("Performance data not available.")
+            
+    with tab3:
+        st.markdown("### Supplier Comparison by Item")
+        if not comparison_data.empty:
+            selected_item = st.selectbox("Select Item to Compare Suppliers", comparison_data['ITEM'].unique())
+            item_comp = comparison_data[comparison_data['ITEM'] == selected_item]
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                fig = px.scatter(
+                    item_comp,
+                    x='UNIT_PRICE',
+                    y='RELIABILITY_SCORE',
+                    size='OVERALL_SCORE',
+                    color='SUPPLIER_NAME',
+                    text='SUPPLIER_NAME',
+                    title=f"Price vs. Reliability - {selected_item}",
+                    labels={'UNIT_PRICE': 'Unit Price (₹)', 'RELIABILITY_SCORE': 'Reliability (%)'}
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                st.markdown(f"#### Recommended Ranking for {selected_item}")
+                for idx, row in item_comp.sort_values('SUPPLIER_RANK').iterrows():
+                    st.markdown(f"**#{row['SUPPLIER_RANK']} {row['SUPPLIER_NAME']}** (Score: {row['OVERALL_SCORE']})")
+                    st.progress(row['OVERALL_SCORE']/100)
+        else:
+            st.info("Comparison data not available.")
+            
+    with tab4:
+        st.markdown("### Upcoming Delivery Schedule")
+        if not schedule_data.empty:
+            # Timeline view
+            fig = px.timeline(
+                schedule_data, 
+                x_start="EXPECTED_DELIVERY_DATE", 
+                x_end="EXPECTED_DELIVERY_DATE", 
+                y="ITEM", 
+                color="ORDER_PRIORITY",
+                hover_data=['SUPPLIER_NAME', 'ORDER_QUANTITY', 'LOCATION'],
+                title="Delivery Timeline"
+            )
+            fig.update_yaxes(autorange="reversed")
+            st.plotly_chart(fig, use_container_width=True)
+            
+            st.dataframe(schedule_data, use_container_width=True)
+        else:
+            st.info("No upcoming deliveries scheduled.")
+            
+    with tab5:
+        st.markdown("### Procurement Cost Analysis")
+        if not cost_data.empty:
+            col1, col2 = st.columns(2)
+            with col1:
+                fig = px.pie(
+                    cost_data, 
+                    values='TOTAL_SPEND', 
+                    names='SUPPLIER_NAME', 
+                    title="Spending Distribution by Supplier",
+                    hole=0.4
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                fig = px.bar(
+                    cost_data,
+                    x='SUPPLIER_NAME',
+                    y='TOTAL_SPEND',
+                    title="Total Spending by Supplier (₹)",
+                    labels={'TOTAL_SPEND': 'Total Spend (₹)', 'SUPPLIER_NAME': 'Supplier'}
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            
+            st.dataframe(cost_data, use_container_width=True)
+        else:
+            st.info("Cost analysis data not available.")

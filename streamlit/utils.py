@@ -4,6 +4,7 @@ SVG icons, helpers, and data loading functions
 """
 
 import streamlit as st
+import pandas as pd
 
 # ============================================================================
 # SVG Icon Functions
@@ -236,6 +237,71 @@ def load_budget_tracking():
             return df
         except Exception as e:
             st.warning(f"Budget tracking not available: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_purchase_orders():
+    """Load purchase orders."""
+    session = get_session()
+    if session:
+        try:
+            df = session.sql('SELECT * FROM purchase_orders').to_pandas()
+            return df
+        except Exception as e:
+            st.warning(f"Purchase orders not available: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_supplier_performance():
+    """Load supplier performance data."""
+    session = get_session()
+    if session:
+        try:
+            df = session.sql('SELECT * FROM supplier_performance').to_pandas()
+            return df
+        except Exception as e:
+            st.warning(f"Supplier performance not available: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_supplier_comparison():
+    """Load supplier comparison data."""
+    session = get_session()
+    if session:
+        try:
+            df = session.sql('SELECT * FROM supplier_comparison').to_pandas()
+            return df
+        except Exception as e:
+            st.warning(f"Supplier comparison not available: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_supplier_cost_analysis():
+    """Load supplier cost analysis data."""
+    session = get_session()
+    if session:
+        try:
+            df = session.sql('SELECT * FROM supplier_cost_analysis').to_pandas()
+            return df
+        except Exception as e:
+            st.warning(f"Supplier cost analysis not available: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_delivery_schedule():
+    """Load delivery schedule data."""
+    session = get_session()
+    if session:
+        try:
+            df = session.sql('SELECT * FROM delivery_schedule').to_pandas()
+            return df
+        except Exception as e:
+            st.warning(f"Delivery schedule not available: {e}")
             return pd.DataFrame()
     return pd.DataFrame()
 
