@@ -344,8 +344,8 @@ graph TB
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/stockpulse-360.git
-cd stockpulse-360
+git clone https://github.com/FlemingJohn/StockPulse-360.git
+cd StockPulse-360
 
 # 2. Install dependencies
 pip install -r requirements.txt
@@ -473,10 +473,14 @@ StockPulse-360/
 │   ├── utils.py                # Utility functions
 │   └── styles.py               # Custom CSS
 │
-├── 📂 Guides/                  # Documentation
+├── 📂 Guides/                 # Documentation
 │   ├── AI_ML_FEATURES.md
 │   ├── ADVANCED_ANALYTICS.md
-│   └── NOTIFICATION_SETUP.md
+│   ├── NOTIFICATION_SETUP.md
+│   ├── SETUP_GUIDE.md
+│   ├── SNOWFLAKE_CONFIG.md
+│   ├── SNOWFLAKE_CLI_WORKFLOW.md
+│   └── Project_details.md
 │
 ├── requirements.txt            # Python dependencies
 └── README.md                   # This file
@@ -522,11 +526,19 @@ StockPulse-360/
 
 ## 📚 Documentation
 
-- [AI/ML Features Guide](Guides/AI_ML_FEATURES.md)
-- [Advanced Analytics Guide](Guides/ADVANCED_ANALYTICS.md)
-- [Notification Setup](Guides/NOTIFICATION_SETUP.md)
-- [Supplier Integration](Guides/SUPPLIER_INTEGRATION.md)
-- [API Reference](Guides/API_REFERENCE.md)
+### 🚀 Getting Started
+- [Setup Guide](Guides/SETUP_GUIDE.md) - Complete installation and configuration
+- [Snowflake Configuration](Guides/SNOWFLAKE_CONFIG.md) - Database setup and credentials
+- [Snowflake CLI Workflow](Guides/SNOWFLAKE_CLI_WORKFLOW.md) - Using Snowflake CLI tools
+
+### 🤖 Features & Capabilities
+- [AI/ML Features Guide](Guides/AI_ML_FEATURES.md) - Seasonal forecasting, anomaly detection, and Cortex AI
+- [Advanced Analytics Guide](Guides/ADVANCED_ANALYTICS.md) - ABC analysis, cost optimization, and stockout impact
+- [Notification Setup](Guides/NOTIFICATION_SETUP.md) - Email and Slack alert configuration
+
+### 📝 Project Information
+- [Project Details](Guides/Project_details.md) - Comprehensive project overview
+- [Modular README](Guides/README_MODULAR.md) - Alternative documentation format
 
 ---
 
@@ -566,9 +578,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-**Project Maintainer:** Your Name  
-**Email:** your.email@example.com  
-**LinkedIn:** [Your Profile](https://linkedin.com/in/yourprofile)
+**Project Maintainer:** Fleming John  
+**Email:** flemjohn08@gmail.com  
+**GitHub:** [FlemingJohn](https://github.com/FlemingJohn)
 
 ---
 
@@ -578,6 +590,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ⭐ Star this repo if you find it helpful!
 
-[Report Bug](https://github.com/yourusername/stockpulse-360/issues) • [Request Feature](https://github.com/yourusername/stockpulse-360/issues)
+[Report Bug](https://github.com/FlemingJohn/StockPulse-360/issues) • [Request Feature](https://github.com/FlemingJohn/StockPulse-360/issues)
 
 </div>
