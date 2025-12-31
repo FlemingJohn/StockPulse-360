@@ -275,6 +275,7 @@ graph LR
 ```bash
 # Quick demo setup
 streamlit run streamlit/app.py
+# Windows: py -m streamlit run streamlit/app.py
 ```
 
 **Dashboard Highlights:**
@@ -382,8 +383,11 @@ py python/create_advanced_views.py
 ### Launch Dashboard
 
 ```bash
+# Linux/Mac:
 streamlit run streamlit/app.py
-# Windows: py -m streamlit run streamlit/app.py
+
+# Windows (recommended):
+py -m streamlit run streamlit/app.py
 ```
 
 🎉 **Dashboard will open at:** `http://localhost:8501`
