@@ -17,26 +17,37 @@ load_dotenv()
 # For production, use environment variables or Snowflake config file
 
 # Helper to get config from multiple sources
-def get_config_value(key, env_key, default=None):
+def get_config_value(key, env_key):
     # 1. Try Streamlit Secrets (for Cloud)
     try:
         import streamlit as st
+        # Check nested [connections.snowflake] first
         if "connections" in st.secrets and "snowflake" in st.secrets["connections"]:
             return st.secrets["connections"]["snowflake"].get(key)
+        # Check flat [snowflake] (alternative)
+        if "snowflake" in st.secrets:
+            return st.secrets["snowflake"].get(key)
     except:
         pass
         
     # 2. Try Environment Variable (for Local)
-    return os.getenv(env_key, default)
+    val = os.getenv(env_key)
+    if val: return val
+    
+    # 3. Fail hard if missing (don't use placeholders)
+    if key == "role": return "ACCOUNTADMIN" # Safe default
+    if key == "schema": return "PUBLIC"
+    if key == "warehouse": return "COMPUTE_WH"
+    return None
 
 SNOWFLAKE_CONFIG: Dict[str, str] = {
-    "account": get_config_value("account", "SNOWFLAKE_ACCOUNT", "your_account"),
-    "user": get_config_value("user", "SNOWFLAKE_USER", "your_user"),
-    "password": get_config_value("password", "SNOWFLAKE_PASSWORD", "your_password"),
-    "warehouse": get_config_value("warehouse", "SNOWFLAKE_WAREHOUSE", "compute_wh"),
-    "database": get_config_value("database", "SNOWFLAKE_DATABASE", "stockpulse_db"),
-    "schema": get_config_value("schema", "SNOWFLAKE_SCHEMA", "public"),
-    "role": get_config_value("role", "SNOWFLAKE_ROLE", "ACCOUNTADMIN"),
+    "account": get_config_value("account", "SNOWFLAKE_ACCOUNT"),
+    "user": get_config_value("user", "SNOWFLAKE_USER"),
+    "password": get_config_value("password", "SNOWFLAKE_PASSWORD"),
+    "warehouse": get_config_value("warehouse", "SNOWFLAKE_WAREHOUSE"),
+    "database": get_config_value("database", "SNOWFLAKE_DATABASE"),
+    "schema": get_config_value("schema", "SNOWFLAKE_SCHEMA"),
+    "role": get_config_value("role", "SNOWFLAKE_ROLE"),
 }
 
 # ============================================================================
