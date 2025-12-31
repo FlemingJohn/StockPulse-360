@@ -16,14 +16,27 @@ load_dotenv()
 # IMPORTANT: Replace these with your actual Snowflake credentials
 # For production, use environment variables or Snowflake config file
 
+# Helper to get config from multiple sources
+def get_config_value(key, env_key, default=None):
+    # 1. Try Streamlit Secrets (for Cloud)
+    try:
+        import streamlit as st
+        if "connections" in st.secrets and "snowflake" in st.secrets["connections"]:
+            return st.secrets["connections"]["snowflake"].get(key)
+    except:
+        pass
+        
+    # 2. Try Environment Variable (for Local)
+    return os.getenv(env_key, default)
+
 SNOWFLAKE_CONFIG: Dict[str, str] = {
-    "account": os.getenv("SNOWFLAKE_ACCOUNT", "your_account_identifier"),
-    "user": os.getenv("SNOWFLAKE_USER", "your_username"),
-    "password": os.getenv("SNOWFLAKE_PASSWORD", "your_password"),
-    "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE", "compute_wh"),
-    "database": os.getenv("SNOWFLAKE_DATABASE", "stockpulse_db"),
-    "schema": os.getenv("SNOWFLAKE_SCHEMA", "public"),
-    "role": os.getenv("SNOWFLAKE_ROLE", "ACCOUNTADMIN"),
+    "account": get_config_value("account", "SNOWFLAKE_ACCOUNT", "your_account"),
+    "user": get_config_value("user", "SNOWFLAKE_USER", "your_user"),
+    "password": get_config_value("password", "SNOWFLAKE_PASSWORD", "your_password"),
+    "warehouse": get_config_value("warehouse", "SNOWFLAKE_WAREHOUSE", "compute_wh"),
+    "database": get_config_value("database", "SNOWFLAKE_DATABASE", "stockpulse_db"),
+    "schema": get_config_value("schema", "SNOWFLAKE_SCHEMA", "public"),
+    "role": get_config_value("role", "SNOWFLAKE_ROLE", "ACCOUNTADMIN"),
 }
 
 # ============================================================================

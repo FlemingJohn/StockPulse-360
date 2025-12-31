@@ -159,14 +159,24 @@ def render_delivery_schedule():
                 events.append(event)
                 
             calendar_options = {
-                "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,listMonth"},
+                "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,timeGridWeek,listMonth"},
                 "initialView": "dayGridMonth",
-                "height": 650
+                "initialDate": datetime.date.today().isoformat(),
+                "height": 700,
+                "navLinks": True,
+                "selectable": True,
+                "nowIndicator": True,
             }
             
+            # CSS hack to ensure visibility if theme issues exist
+            custom_css = """
+            .fc-event-title, .fc-event-time { color: white !important; font-weight: bold; }
+            .fc-toolbar-title { color: #29B5E8 !important; }
+            """
+
             with st.spinner("Loading Calendar..."):
-                st.write(f"DEBUG: Rendering {len(events)} events")
-                calendar(events=events, options=calendar_options)
+                calendar(events=events, options=calendar_options, custom_css=custom_css)
+                st.caption(f"Showing {len(events)} deliveries. Default view: {datetime.date.today().strftime('%B %Y')}")
                 
             # Legend
             st.markdown("---")
