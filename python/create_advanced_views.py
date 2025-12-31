@@ -16,8 +16,8 @@ def create_views():
     stockout_query = """
     CREATE OR REPLACE VIEW stockout_impact AS
     SELECT
-        h."location",
-        h."item",
+        h.location,
+        h.item,
         h.CURRENT_STOCK,
         h.AVG_DAILY_USAGE,
         h.DAYS_UNTIL_STOCKOUT,
@@ -30,8 +30,8 @@ def create_views():
         
         -- Severity based on item criticality and impact
         CASE
-            WHEN h."item" = 'Insulin' AND h.STOCK_STATUS IN ('OUT_OF_STOCK', 'CRITICAL') THEN 'LIFE_THREATENING'
-            WHEN h."item" IN ('Insulin', 'ORS') AND h.STOCK_STATUS = 'CRITICAL' THEN 'HIGH_SEVERITY'
+            WHEN h.item = 'Insulin' AND h.STOCK_STATUS IN ('OUT_OF_STOCK', 'CRITICAL') THEN 'LIFE_THREATENING'
+            WHEN h.item IN ('Insulin', 'ORS') AND h.STOCK_STATUS = 'CRITICAL' THEN 'HIGH_SEVERITY'
             WHEN h.STOCK_STATUS = 'CRITICAL' THEN 'MODERATE_SEVERITY'
             WHEN h.STOCK_STATUS = 'WARNING' THEN 'LOW_SEVERITY'
             ELSE 'MINIMAL'
@@ -50,7 +50,7 @@ def create_views():
             ELSE 6
         END AS ACTION_PRIORITY
     FROM STOCK_HEALTH h
-    LEFT JOIN ABC_ANALYSIS a ON h."item" = a."item"
+    LEFT JOIN ABC_ANALYSIS a ON h.item = a.item
     WHERE h.STOCK_STATUS IN ('OUT_OF_STOCK', 'CRITICAL', 'WARNING')
     ORDER BY ACTION_PRIORITY, PATIENTS_AFFECTED_UNTIL_STOCKOUT DESC
     """
@@ -66,7 +66,7 @@ def create_views():
     WITH monthly_procurement AS (
         SELECT
             SUM(r.REORDER_QUANTITY * 
-                CASE r."item"
+                CASE r.item
                     WHEN 'Insulin' THEN 500
                     WHEN 'ORS' THEN 10
                     WHEN 'Paracetamol' THEN 5
@@ -96,7 +96,7 @@ def create_views():
     stockout_result = session.sql("SELECT * FROM stockout_impact").to_pandas()
     print(f"\n✅ Stockout Impact has {len(stockout_result)} items")
     if len(stockout_result) > 0:
-        print(stockout_result[['location', 'item', 'IMPACT_SEVERITY', 'ACTION_PRIORITY']].head())
+        print(stockout_result[['LOCATION', 'ITEM', 'IMPACT_SEVERITY', 'ACTION_PRIORITY']].head())
     else:
         print("   (No critical/warning items currently)")
     

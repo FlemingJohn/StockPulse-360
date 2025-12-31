@@ -38,7 +38,18 @@ VALUES
     ('SUP003', 'PharmaDirect', 'ORS', 2, 98, 10.00, 'info@pharmadirect.com', '+91-9876543212', '2024-11-29', 100, 98),
     ('SUP004', 'HealthPlus Supplies', 'ORS', 4, 92, 9.50, 'orders@healthplus.com', '+91-9876543213', '2024-11-27', 45, 42),
     ('SUP005', 'MediCare Distributors', 'Paracetamol', 2, 96, 5.00, 'sales@medicare.com', '+91-9876543214', '2024-11-29', 80, 77),
-    ('SUP006', 'FastPharma', 'Paracetamol', 1, 88, 5.20, 'orders@fastpharma.com', '+91-9876543215', '2024-11-30', 25, 22);
+    ('SUP006', 'FastPharma', 'Paracetamol', 1, 88, 5.20, 'orders@fastpharma.com', '+91-9876543215', '2024-11-30', 25, 22),
+    ('SUP007', 'AntibioCare', 'Antibiotics', 3, 94, 150.00, 'sales@antibiocare.com', '+91-9876543216', '2024-11-28', 60, 58),
+    ('SUP008', 'PainRelief Inc', 'Aspirin', 2, 90, 4.50, 'orders@painrelief.com', '+91-9876543217', '2024-11-29', 40, 38),
+    ('SUP009', 'MediTech Devices', 'BP Monitor', 5, 97, 1200.00, 'sales@meditech.com', '+91-9876543218', '2024-11-25', 20, 20),
+    ('SUP010', 'SurgicalNeeds', 'Bandages', 1, 99, 15.00, 'orders@surgicalneeds.com', '+91-9876543219', '2024-11-30', 150, 149),
+    ('SUP011', 'SafetyFirst', 'Gloves', 2, 93, 8.00, 'sales@safetyfirst.com', '+91-9876543220', '2024-11-28', 200, 190),
+    ('SUP012', 'DiabeticCare', 'Glucose Test Strips', 2, 96, 25.00, 'orders@diabeticcare.com', '+91-9876543221', '2024-11-29', 80, 78),
+    ('SUP013', 'FluidSystems', 'IV Fluids', 3, 91, 45.00, 'sales@fluidsystems.com', '+91-9876543222', '2024-11-27', 70, 65),
+    ('SUP014', 'ProtectMed', 'Masks', 1, 98, 5.00, 'orders@protectmed.com', '+91-9876543223', '2024-11-30', 300, 295),
+    ('SUP015', 'OxyGen', 'Oxygen Cylinders', 1, 99, 4500.00, 'sales@oxygen.com', '+91-9876543224', '2024-11-30', 10, 10),
+    ('SUP016', 'InjectSafe', 'Syringes', 2, 95, 3.00, 'orders@injectsafe.com', '+91-9876543225', '2024-11-29', 120, 115),
+    ('SUP017', 'TempCheck', 'Thermometers', 4, 92, 350.00, 'sales@tempcheck.com', '+91-9876543226', '2024-11-26', 30, 28);
 
 -- ============================================================================
 -- View 1: Purchase Orders
@@ -65,9 +76,9 @@ WITH best_suppliers AS (
 )
 SELECT
     CONCAT('PO-', TO_CHAR(CURRENT_DATE(), 'YYYYMMDD'), '-', 
-           LPAD(ROW_NUMBER() OVER (ORDER BY r."location", r."item"), 4, '0')) AS purchase_order_id,
-    r."location" AS location,
-    r."item" AS item,
+           LPAD(ROW_NUMBER() OVER (ORDER BY r.location, r.item), 4, '0')) AS purchase_order_id,
+    r.location AS location,
+    r.item AS item,
     s.supplier_id,
     s.supplier_name,
     s.contact_email,
@@ -87,8 +98,8 @@ SELECT
     h.stock_status,
     CURRENT_TIMESTAMP() AS generated_at
 FROM reorder_recommendations r
-JOIN best_suppliers s ON r."item" = s.item AND s.supplier_rank = 1
-JOIN stock_health h ON r."location" = h."location" AND r."item" = h."item";
+JOIN best_suppliers s ON r.item = s.item AND s.supplier_rank = 1
+JOIN stock_health h ON r.location = h.location AND r.item = h.item;
 
 -- ============================================================================
 -- View 2: Supplier Performance Dashboard
@@ -214,6 +225,7 @@ ORDER BY total_spend DESC;
 
 CREATE OR REPLACE VIEW delivery_schedule AS
 SELECT
+    order_date,
     expected_delivery_date,
     location,
     item,
@@ -230,28 +242,3 @@ SELECT
     END AS delivery_timeframe
 FROM purchase_orders
 ORDER BY expected_delivery_date, order_priority;
-
--- ============================================================================
--- Verification Queries
--- ============================================================================
-
--- Show all suppliers
-SELECT * FROM suppliers ORDER BY item, reliability_score DESC;
-
--- Show purchase orders
-SELECT * FROM purchase_orders LIMIT 10;
-
--- Show supplier performance
-SELECT * FROM supplier_performance;
-
--- Show supplier comparison
-SELECT * FROM supplier_comparison WHERE item = 'Insulin';
-
--- Show purchase order summary
-SELECT * FROM purchase_order_summary;
-
--- Show delivery schedule
-SELECT * FROM delivery_schedule WHERE delivery_timeframe IN ('TODAY', 'TOMORROW');
-
--- Show cost analysis
-SELECT * FROM supplier_cost_analysis;

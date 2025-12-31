@@ -20,16 +20,15 @@ WITH item_value AS (
     SELECT
         item,
         location,
-        SUM("issued_qty") AS total_issued,
-        -- Using estimated unit prices (can be replaced with actual price table)
-        CASE "item"
-            WHEN 'Insulin' THEN 500  -- High value
-            WHEN 'ORS' THEN 10       -- Low value
-            WHEN 'Paracetamol' THEN 5 -- Low value
+        SUM(issued_qty) AS total_issued,
+        CASE item
+            WHEN 'Insulin' THEN 500
+            WHEN 'ORS' THEN 10
+            WHEN 'Paracetamol' THEN 5
             ELSE 10
         END AS unit_price
     FROM raw_stock
-    GROUP BY "item", "location"
+    GROUP BY item, location
 ),
 item_total_value AS (
     SELECT
@@ -76,15 +75,15 @@ WITH location_item_value AS (
     SELECT
         location,
         item,
-        SUM("issued_qty") AS total_issued,
-        CASE "item"
+        SUM(issued_qty) AS total_issued,
+        CASE item
             WHEN 'Insulin' THEN 500
             WHEN 'ORS' THEN 10
             WHEN 'Paracetamol' THEN 5
             ELSE 10
         END AS unit_price
     FROM raw_stock
-    GROUP BY "location", "item"
+    GROUP BY location, item
 ),
 location_value AS (
     SELECT
@@ -156,7 +155,7 @@ SELECT
     
     h.last_updated_date
 FROM stock_health h
-LEFT JOIN abc_analysis a ON h."item" = a.item
+LEFT JOIN abc_analysis a ON h.item = a.item
 WHERE h.stock_status IN ('OUT_OF_STOCK', 'CRITICAL', 'WARNING')
 ORDER BY action_priority, patients_affected_until_stockout DESC;
 
@@ -192,15 +191,10 @@ SELECT
         ELSE 'MONITOR'
     END AS recommended_action,
     
-    -- Reorder quantity
-    r.recommended_order_qty,
-    r.order_urgency_days,
-    
-    CURRENT_TIMESTAMP() AS report_generated_at
+    h.last_updated_date
 FROM stock_health h
-LEFT JOIN abc_analysis a ON h."item" = a.item
-LEFT JOIN stockout_impact s ON h."location" = s.location AND h."item" = s.item
-LEFT JOIN reorder_recommendations r ON h."location" = r."location" AND h."item" = r."item"
+LEFT JOIN abc_analysis a ON h.item = a.item
+LEFT JOIN stockout_impact s ON h.location = s.location AND h.item = s.item
 WHERE h.stock_status IN ('OUT_OF_STOCK', 'CRITICAL', 'WARNING', 'LOW')
    OR a.abc_category = 'A'
 ORDER BY s.action_priority, a.management_priority, h.health_score;
@@ -236,14 +230,13 @@ ORDER BY abc_category;
 -- Create a reference table for item prices
 -- This can be updated with actual prices
 
-CREATE OR REPLACE TABLE IF NOT EXISTS item_prices (
+CREATE OR REPLACE TABLE item_prices (
     item STRING PRIMARY KEY,
     unit_price NUMBER(10,2),
     currency STRING DEFAULT 'INR',
     price_effective_date DATE DEFAULT CURRENT_DATE(),
-    price_category STRING,
-    COMMENT 'Reference prices for ABC analysis'
-);
+    price_category STRING
+) COMMENT = 'Reference prices for ABC analysis';
 
 -- Insert default prices
 MERGE INTO item_prices AS target
@@ -253,6 +246,28 @@ USING (
     SELECT 'ORS', 10.00, 'INR', 'LOW_VALUE'
     UNION ALL
     SELECT 'Paracetamol', 5.00, 'INR', 'LOW_VALUE'
+    UNION ALL
+    SELECT 'Aspirin', 10.00, 'INR', 'LOW_VALUE'
+    UNION ALL
+    SELECT 'Antibiotics', 20.00, 'INR', 'MEDIUM_VALUE'
+    UNION ALL
+    SELECT 'Bandages', 5.00, 'INR', 'LOW_VALUE'
+    UNION ALL
+    SELECT 'Syringes', 5.00, 'INR', 'LOW_VALUE'
+    UNION ALL
+    SELECT 'Gloves', 2.00, 'INR', 'LOW_VALUE'
+    UNION ALL
+    SELECT 'Masks', 1.00, 'INR', 'LOW_VALUE'
+    UNION ALL
+    SELECT 'Thermometers', 100.00, 'INR', 'MEDIUM_VALUE'
+    UNION ALL
+    SELECT 'BP Monitor', 1500.00, 'INR', 'HIGH_VALUE'
+    UNION ALL
+    SELECT 'Glucose Test Strips', 20.00, 'INR', 'MEDIUM_VALUE'
+    UNION ALL
+    SELECT 'IV Fluids', 50.00, 'INR', 'MEDIUM_VALUE'
+    UNION ALL
+    SELECT 'Oxygen Cylinders', 2000.00, 'INR', 'HIGH_VALUE'
 ) AS source
 ON target.item = source.item
 WHEN MATCHED THEN
@@ -262,25 +277,6 @@ WHEN MATCHED THEN
 WHEN NOT MATCHED THEN
     INSERT (item, unit_price, currency, price_category)
     VALUES (source.item, source.unit_price, source.currency, source.price_category);
-
--- ============================================================================
--- Verification Queries
--- ============================================================================
-
--- Show ABC distribution
-SELECT * FROM abc_summary_statistics;
-
--- Show critical items with ABC classification
-SELECT * FROM critical_items_dashboard LIMIT 10;
-
--- Show stockout impact
-SELECT * FROM stockout_impact ORDER BY action_priority LIMIT 10;
-
--- Show ABC analysis
-SELECT * FROM abc_analysis;
-
--- Show ABC by location
-SELECT * FROM abc_analysis_by_location WHERE location = 'Chennai';
 
 -- ============================================================================
 -- COST OPTIMIZATION VIEWS
@@ -300,34 +296,34 @@ WITH waste_reduction AS (
         CASE 
             WHEN current_stock > (avg_daily_usage * (lead_time_days + 14)) 
             THEN (current_stock - (avg_daily_usage * (lead_time_days + 14))) * 
-                 (SELECT unit_price FROM item_prices WHERE item_prices.item = stock_health.item)
+                 (SELECT unit_price FROM item_prices WHERE item_prices.item = h.item)
             ELSE 0
         END AS overstock_value
-    FROM stock_health
+    FROM stock_health h
 ),
 emergency_avoidance AS (
     SELECT
         location,
         item,
         -- Emergency orders typically cost 30% more
-        recommended_order_qty * 
-        (SELECT unit_price FROM item_prices WHERE item_prices.item = reorder_recommendations.item) * 0.30 
+        reorder_quantity * 
+        (SELECT unit_price FROM item_prices WHERE item_prices.item = r.item) * 0.30 
         AS emergency_cost_avoided
-    FROM reorder_recommendations
-    WHERE order_urgency_days <= 2  -- Orders placed with 2+ days notice
+    FROM reorder_recommendations r
+    WHERE days_until_stockout <= 2  -- Orders placed with 2+ days notice
 ),
 bulk_opportunities AS (
     SELECT
         item,
-        SUM(recommended_order_qty) AS total_qty_needed,
-        (SELECT unit_price FROM item_prices WHERE item_prices.item = reorder_recommendations.item) AS current_price,
+        SUM(reorder_quantity) AS total_qty_needed,
+        (SELECT unit_price FROM item_prices WHERE item_prices.item = r.item) AS current_price,
         -- Assume 10% discount for bulk orders
-        SUM(recommended_order_qty) * 
-        (SELECT unit_price FROM item_prices WHERE item_prices.item = reorder_recommendations.item) * 0.10 
+        SUM(reorder_quantity) * 
+        (SELECT unit_price FROM item_prices WHERE item_prices.item = r.item) * 0.10 
         AS potential_bulk_savings
-    FROM reorder_recommendations
+    FROM reorder_recommendations r
     GROUP BY item
-    HAVING SUM(recommended_order_qty) > 100  -- Bulk threshold
+    HAVING SUM(reorder_quantity) > 100  -- Bulk threshold
 )
 SELECT
     'Waste Reduction' AS savings_category,
@@ -363,60 +359,22 @@ FROM bulk_opportunities;
 CREATE OR REPLACE VIEW budget_tracking AS
 WITH monthly_procurement AS (
     SELECT
-        DATE_TRUNC('MONTH', CURRENT_DATE()) AS month,
-        SUM(r.recommended_order_qty * p.unit_price) AS estimated_spend
+        SUM(r.reorder_quantity * p.unit_price) AS estimated_spend
     FROM reorder_recommendations r
     JOIN item_prices p ON r.item = p.item
-),
-budget_config AS (
-    SELECT 100000 AS monthly_budget  -- ₹100,000 default budget
 )
 SELECT
-    m.month,
-    b.monthly_budget,
+    100000 AS monthly_budget,
     m.estimated_spend,
-    b.monthly_budget - m.estimated_spend AS remaining_budget,
-    ROUND((m.estimated_spend / b.monthly_budget) * 100, 2) AS budget_utilization_pct,
+    100000 - m.estimated_spend AS remaining_budget,
+    ROUND((m.estimated_spend / 100000) * 100, 2) AS budget_utilization_pct,
     CASE
-        WHEN m.estimated_spend > b.monthly_budget THEN 'OVER_BUDGET'
-        WHEN m.estimated_spend > (b.monthly_budget * 0.9) THEN 'WARNING'
-        WHEN m.estimated_spend > (b.monthly_budget * 0.75) THEN 'MODERATE'
+        WHEN m.estimated_spend > 100000 THEN 'OVER_BUDGET'
+        WHEN m.estimated_spend > 90000 THEN 'WARNING'
+        WHEN m.estimated_spend > 75000 THEN 'MODERATE'
         ELSE 'HEALTHY'
     END AS budget_status
-FROM monthly_procurement m
-CROSS JOIN budget_config b;
-
--- ============================================================================
--- View 9: Price Trend Analysis
--- ============================================================================
--- Track item price changes over time
-
-CREATE OR REPLACE VIEW price_trend_analysis AS
-WITH price_history AS (
-    SELECT
-        item,
-        unit_price,
-        price_date,
-        LAG(unit_price) OVER (PARTITION BY item ORDER BY price_date) AS prev_price,
-        LAG(price_date) OVER (PARTITION BY item ORDER BY price_date) AS prev_date
-    FROM item_prices
-)
-SELECT
-    item,
-    unit_price AS current_price,
-    prev_price,
-    price_date AS current_date,
-    prev_date,
-    unit_price - prev_price AS price_change,
-    ROUND(((unit_price - prev_price) / NULLIF(prev_price, 0)) * 100, 2) AS price_change_pct,
-    CASE
-        WHEN unit_price > prev_price THEN 'INCREASED'
-        WHEN unit_price < prev_price THEN 'DECREASED'
-        ELSE 'STABLE'
-    END AS trend
-FROM price_history
-WHERE prev_price IS NOT NULL
-ORDER BY ABS(price_change_pct) DESC;
+FROM monthly_procurement m;
 
 -- ============================================================================
 -- View 10: Cost Per Location
@@ -427,10 +385,9 @@ CREATE OR REPLACE VIEW cost_per_location AS
 SELECT
     r.location,
     COUNT(DISTINCT r.item) AS items_to_order,
-    SUM(r.recommended_order_qty) AS total_quantity,
-    SUM(r.recommended_order_qty * p.unit_price) AS total_cost,
-    AVG(p.unit_price) AS avg_item_price,
-    MAX(r.recommended_order_qty * p.unit_price) AS highest_cost_item_value
+    SUM(r.reorder_quantity) AS total_quantity,
+    SUM(r.reorder_quantity * p.unit_price) AS total_cost,
+    AVG(p.unit_price) AS avg_item_price
 FROM reorder_recommendations r
 JOIN item_prices p ON r.item = p.item
 GROUP BY r.location
@@ -444,7 +401,7 @@ ORDER BY total_cost DESC;
 CREATE OR REPLACE VIEW roi_analysis AS
 WITH costs AS (
     SELECT
-        SUM(recommended_order_qty * unit_price) AS total_procurement_cost
+        SUM(reorder_quantity * unit_price) AS total_procurement_cost
     FROM reorder_recommendations r
     JOIN item_prices p ON r.item = p.item
 ),
@@ -452,7 +409,7 @@ savings AS (
     SELECT SUM(total_savings) AS total_savings
     FROM cost_savings_dashboard
 ),
-stockout_impact AS (
+impact_val AS (
     SELECT 
         SUM(patients_affected_until_stockout * 100) AS stockout_cost_avoided  -- ₹100 per patient impact
     FROM stockout_impact
@@ -465,24 +422,4 @@ SELECT
     ROUND(((s.total_savings + i.stockout_cost_avoided) / NULLIF(c.total_procurement_cost, 0)) * 100, 2) AS roi_percentage
 FROM costs c
 CROSS JOIN savings s
-CROSS JOIN stockout_impact i;
-
--- ============================================================================
--- Verification Queries
--- ============================================================================
-
--- Show cost savings
-SELECT * FROM cost_savings_dashboard;
-
--- Show budget status
-SELECT * FROM budget_tracking;
-
--- Show price trends
-SELECT * FROM price_trend_analysis LIMIT 10;
-
--- Show cost by location
-SELECT * FROM cost_per_location;
-
--- Show ROI
-SELECT * FROM roi_analysis;
-
+CROSS JOIN impact_val i;

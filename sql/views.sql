@@ -18,8 +18,8 @@ DROP VIEW IF EXISTS item_performance;
 
 CREATE OR REPLACE VIEW stock_risk AS
 SELECT
-    h."location" AS LOCATION,
-    h."item" AS ITEM,
+    h.location AS LOCATION,
+    h.item AS ITEM,
     h.current_stock AS CURRENT_STOCK,
     h.avg_daily_usage AS AVG_DAILY_USAGE,
     h.safety_stock AS SAFETY_STOCK,
@@ -35,16 +35,16 @@ FROM stock_health h;
 
 CREATE OR REPLACE VIEW critical_alerts AS
 SELECT
-    h."location" AS LOCATION,
-    h."item" AS ITEM,
+    h.location AS LOCATION,
+    h.item AS ITEM,
     h.current_stock AS CURRENT_STOCK,
     h.avg_daily_usage AS AVG_DAILY_USAGE,
     h.days_until_stockout AS DAYS_UNTIL_STOCKOUT,
     h.stock_status AS STOCK_STATUS,
     CASE
-        WHEN h.stock_status = 'OUT_OF_STOCK' THEN 'URGENT: ' || h."item" || ' is out of stock at ' || h."location"
-        WHEN h.stock_status = 'CRITICAL' THEN 'CRITICAL: ' || h."item" || ' at ' || h."location" || ' will run out in ' || h.days_until_stockout || ' days'
-        WHEN h.stock_status = 'WARNING' THEN 'WARNING: ' || h."item" || ' at ' || h."location" || ' is running low'
+        WHEN h.stock_status = 'OUT_OF_STOCK' THEN 'URGENT: ' || h.item || ' is out of stock at ' || h.location
+        WHEN h.stock_status = 'CRITICAL' THEN 'CRITICAL: ' || h.item || ' at ' || h.location || ' will run out in ' || h.days_until_stockout || ' days'
+        WHEN h.stock_status = 'WARNING' THEN 'WARNING: ' || h.item || ' at ' || h.location || ' is running low'
         ELSE 'INFO: Stock level acceptable'
     END AS ALERT_MESSAGE,
     h.last_updated_date AS LAST_UPDATED_DATE
@@ -57,8 +57,8 @@ WHERE h.stock_status IN ('OUT_OF_STOCK', 'CRITICAL', 'WARNING');
 
 CREATE OR REPLACE VIEW procurement_export AS
 SELECT
-    r."location" AS "Location",
-    r."item" AS "Item Name",
+    r.location AS "Location",
+    r.item AS "Item Name",
     r.current_stock AS "Current Stock",
     r.reorder_quantity AS "Quantity to Order",
     r.priority AS "Priority",
@@ -81,7 +81,7 @@ ORDER BY
 
 CREATE OR REPLACE VIEW location_summary AS
 SELECT
-    h."location" AS LOCATION,
+    h.location AS LOCATION,
     COUNT(*) AS TOTAL_ITEMS,
     SUM(CASE WHEN h.stock_status = 'OUT_OF_STOCK' THEN 1 ELSE 0 END) AS OUT_OF_STOCK_COUNT,
     SUM(CASE WHEN h.stock_status = 'CRITICAL' THEN 1 ELSE 0 END) AS CRITICAL_COUNT,
@@ -91,7 +91,7 @@ SELECT
     ROUND(AVG(h.health_score), 1) AS AVG_HEALTH_SCORE,
     MAX(h.last_updated_date) AS LAST_UPDATED
 FROM stock_health h
-GROUP BY h."location";
+GROUP BY h.location;
 
 -- ============================================================================
 -- View 5: Item Performance (FIXED)
@@ -99,8 +99,8 @@ GROUP BY h."location";
 
 CREATE OR REPLACE VIEW item_performance AS
 SELECT
-    s."item" AS ITEM,
-    COUNT(DISTINCT s."location") AS LOCATIONS_STOCKED,
+    s.item AS ITEM,
+    COUNT(DISTINCT s.location) AS LOCATIONS_STOCKED,
     SUM(s.current_stock) AS TOTAL_STOCK_ALL_LOCATIONS,
     ROUND(AVG(s.avg_daily_usage), 2) AS AVG_USAGE_PER_LOCATION,
     SUM(s.total_issued) AS TOTAL_ISSUED_7DAYS,
@@ -112,6 +112,6 @@ SELECT
     SUM(CASE WHEN h.stock_status IN ('OUT_OF_STOCK', 'CRITICAL') THEN 1 ELSE 0 END) AS CRITICAL_LOCATIONS,
     MAX(s.last_updated_date) AS LAST_UPDATED
 FROM stock_stats s
-JOIN stock_health h ON s."location" = h."location" AND s."item" = h."item"
-GROUP BY s."item"
+JOIN stock_health h ON s.location = h.location AND s.item = h.item
+GROUP BY s.item
 ORDER BY TOTAL_ISSUED_7DAYS DESC;

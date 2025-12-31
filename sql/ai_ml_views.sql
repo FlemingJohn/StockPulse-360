@@ -181,16 +181,16 @@ LEFT JOIN seasonal_insights s
 CREATE OR REPLACE VIEW ml_model_performance AS
 WITH actual_usage AS (
     SELECT
-        "location",
-        "item",
-        "last_updated_date" AS record_date,
-        "issued_qty" AS actual_value
+        location,
+        item,
+        last_updated_date AS record_date,
+        issued_qty AS actual_value
     FROM raw_stock
 ),
 forecast_comparison AS (
     SELECT
-        a."location",
-        a."item",
+        a.location,
+        a.item,
         a.record_date,
         a.actual_value,
         f.basic_forecast_7day / 7 AS basic_forecast,
@@ -205,8 +205,8 @@ forecast_comparison AS (
         ABS(a.actual_value - f.ensemble_forecast) AS ensemble_error
     FROM actual_usage a
     JOIN ai_forecast_comparison f
-        ON a."location" = f.location
-        AND a."item" = f.item
+        ON a.location = f.location
+        AND a.item = f.item
         AND a.record_date = f.forecast_date
 )
 SELECT
@@ -223,30 +223,10 @@ SELECT
     -- Best performing model
     CASE
         WHEN AVG(cortex_error) <= AVG(basic_error) 
-         AND AVG(cortex_error) <= AVG(seasonal_error)
-         AND AVG(cortex_error) <= AVG(ensemble_error)
         THEN 'CORTEX_AI'
         WHEN AVG(seasonal_error) <= AVG(basic_error)
-         AND AVG(seasonal_error) <= AVG(ensemble_error)
         THEN 'SEASONAL'
-        WHEN AVG(ensemble_error) <= AVG(basic_error)
-        THEN 'ENSEMBLE'
-        ELSE 'BASIC'
+        ELSE 'ENSEMBLE'
     END AS best_model
 FROM forecast_comparison
 GROUP BY location, item;
-
--- ============================================================================
--- Verification Queries
--- ============================================================================
-
--- Show all AI/ML views
-SHOW VIEWS LIKE '%AI%' IN SCHEMA public;
-SHOW VIEWS LIKE '%ANOMALY%' IN SCHEMA public;
-SHOW VIEWS LIKE '%SEASONAL%' IN SCHEMA public;
-
--- Test views
-SELECT * FROM ai_forecast_comparison LIMIT 5;
-SELECT * FROM anomaly_dashboard LIMIT 5;
-SELECT * FROM seasonal_insights LIMIT 5;
-SELECT * FROM ai_enhanced_stock_risk LIMIT 5;

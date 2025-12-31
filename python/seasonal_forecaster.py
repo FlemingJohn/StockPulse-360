@@ -28,10 +28,10 @@ class SeasonalForecaster:
         
         weekly_query = """
         SELECT
-            "location",
-            "item",
-            DAYOFWEEK("last_updated_date") as day_of_week,
-            CASE DAYOFWEEK("last_updated_date")
+            location,
+            item,
+            DAYOFWEEK(last_updated_date) as day_of_week,
+            CASE DAYOFWEEK(last_updated_date)
                 WHEN 0 THEN 'Sunday'
                 WHEN 1 THEN 'Monday'
                 WHEN 2 THEN 'Tuesday'
@@ -40,16 +40,16 @@ class SeasonalForecaster:
                 WHEN 5 THEN 'Friday'
                 WHEN 6 THEN 'Saturday'
             END as day_name,
-            AVG("issued_qty") as avg_usage,
-            STDDEV("issued_qty") as stddev_usage,
+            AVG(issued_qty) as avg_usage,
+            STDDEV(issued_qty) as stddev_usage,
             COUNT(*) as data_points,
             CASE
-                WHEN DAYOFWEEK("last_updated_date") IN (0, 6) THEN 'Weekend'
+                WHEN DAYOFWEEK(last_updated_date) IN (0, 6) THEN 'Weekend'
                 ELSE 'Weekday'
             END as day_type
         FROM RAW_STOCK
-        GROUP BY "location", "item", day_of_week, day_name, day_type
-        ORDER BY "location", "item", day_of_week
+        GROUP BY location, item, day_of_week, day_name, day_type
+        ORDER BY location, item, day_of_week
         """
         
         results = self.session.sql(weekly_query).to_pandas()
@@ -76,10 +76,10 @@ class SeasonalForecaster:
         
         monthly_query = """
         SELECT
-            "location",
-            "item",
-            MONTH("last_updated_date") as month_num,
-            CASE MONTH("last_updated_date")
+            location,
+            item,
+            MONTH(last_updated_date) as month_num,
+            CASE MONTH(last_updated_date)
                 WHEN 1 THEN 'January'
                 WHEN 2 THEN 'February'
                 WHEN 3 THEN 'March'
@@ -93,12 +93,12 @@ class SeasonalForecaster:
                 WHEN 11 THEN 'November'
                 WHEN 12 THEN 'December'
             END as month_name,
-            AVG("issued_qty") as avg_usage,
-            STDDEV("issued_qty") as stddev_usage,
+            AVG(issued_qty) as avg_usage,
+            STDDEV(issued_qty) as stddev_usage,
             COUNT(*) as data_points
         FROM RAW_STOCK
-        GROUP BY "location", "item", month_num, month_name
-        ORDER BY "location", "item", month_num
+        GROUP BY location, item, month_num, month_name
+        ORDER BY location, item, month_num
         """
         
         results = self.session.sql(monthly_query).to_pandas()
@@ -119,25 +119,25 @@ class SeasonalForecaster:
         trend_query = """
         WITH monthly_stats AS (
             SELECT
-                "location",
-                "item",
-                MONTH("last_updated_date") as month_num,
-                AVG("issued_qty") as avg_usage
+                location,
+                item,
+                MONTH(last_updated_date) as month_num,
+                AVG(issued_qty) as avg_usage
             FROM RAW_STOCK
-            GROUP BY "location", "item", month_num
+            GROUP BY location, item, month_num
         ),
         overall_stats AS (
             SELECT
-                "location",
-                "item",
+                location,
+                item,
                 AVG(avg_usage) as overall_avg,
                 STDDEV(avg_usage) as seasonal_variation
             FROM monthly_stats
-            GROUP BY "location", "item"
+            GROUP BY location, item
         )
         SELECT
-            "location",
-            "item",
+            location,
+            item,
             overall_avg,
             seasonal_variation,
             CASE
@@ -180,14 +180,14 @@ class SeasonalForecaster:
         # Get historical data with day of week
         historical_query = f"""
         SELECT
-            "last_updated_date" as record_date,
-            "issued_qty" as issued,
-            DAYOFWEEK("last_updated_date") as day_of_week,
-            MONTH("last_updated_date") as month_num
+            last_updated_date as record_date,
+            issued_qty as issued,
+            DAYOFWEEK(last_updated_date) as day_of_week,
+            MONTH(last_updated_date) as month_num
         FROM RAW_STOCK
-        WHERE "location" = '{location}'
-        AND "item" = '{item}'
-        ORDER BY "last_updated_date"
+        WHERE location = '{location}'
+        AND item = '{item}'
+        ORDER BY last_updated_date
         """
         
         historical = self.session.sql(historical_query).to_pandas()
@@ -243,15 +243,15 @@ class SeasonalForecaster:
         
         # Get all location-item combinations
         combinations = self.session.sql("""
-            SELECT DISTINCT "location", "item"
+            SELECT DISTINCT location, item
             FROM RAW_STOCK
         """).collect()
         
         all_forecasts = []
         
         for row in combinations:
-            location = row['location']
-            item = row['item']
+            location = row['LOCATION']
+            item = row['ITEM']
             
             forecast = self.create_seasonal_forecast(location, item, forecast_days)
             if forecast is not None:
@@ -283,13 +283,35 @@ class SeasonalForecaster:
                 )
             """).collect()
             
-            # Save forecasts
-            self.session.write_pandas(
-                forecasts_df,
-                "seasonal_forecasts",
-                auto_create_table=False,
-                overwrite=True
-            )
+            # Save forecasts using chunked inserts (to avoid PUT command errors)
+            print(f"📤 Saving {len(forecasts_df)} forecasts using chunked inserts...")
+            
+            def batch_insert_forecasts(df, table_name, chunk_size=100):
+                total_rows = len(df)
+                for start in range(0, total_rows, chunk_size):
+                    end = min(start + chunk_size, total_rows)
+                    chunk = df.iloc[start:end]
+                    
+                    values_list = []
+                    for _, row in chunk.iterrows():
+                        date_val = row['forecast_date']
+                        date_str = date_val.strftime('%Y-%m-%d') if hasattr(date_val, 'strftime') else str(date_val)
+                        
+                        # Escape quotes
+                        safe_loc = str(row['location']).replace("'", "''")
+                        safe_item = str(row['item']).replace("'", "''")
+                        
+                        val = f"('{safe_loc}', '{safe_item}', '{date_str}', {row['forecasted_usage']}, {row['seasonal_factor']}, {row['base_forecast']})"
+                        values_list.append(val)
+                    
+                    sql = f"INSERT INTO {table_name} (location, item, forecast_date, forecasted_usage, seasonal_factor, base_forecast) VALUES {', '.join(values_list)}"
+                    self.session.sql(sql).collect()
+                    print(f"   ✅ Processed {end}/{total_rows} forecasts...")
+
+            # Clear existing forecasts first for a clean run if desired (or it handles overwrite:True)
+            self.session.sql("TRUNCATE TABLE IF EXISTS seasonal_forecasts").collect()
+            
+            batch_insert_forecasts(forecasts_df, "seasonal_forecasts")
             
             print(f"✅ Saved {len(forecasts_df)} seasonal forecasts to Snowflake")
             

@@ -17,29 +17,29 @@ def create_abc_analysis_view():
     CREATE OR REPLACE VIEW abc_analysis AS
     WITH item_value AS (
         SELECT
-            "item",
-            "location",
-            SUM("issued_qty") AS total_issued,
-            CASE "item"
+            item,
+            location,
+            SUM(issued_qty) AS total_issued,
+            CASE item
                 WHEN 'Insulin' THEN 500
                 WHEN 'ORS' THEN 10
                 WHEN 'Paracetamol' THEN 5
                 ELSE 10
             END AS unit_price
-        FROM RAW_STOCK
-        GROUP BY "item", "location"
+        FROM raw_stock
+        GROUP BY item, location
     ),
     item_total_value AS (
         SELECT
-            "item",
+            item,
             SUM(total_issued * unit_price) AS total_value,
             SUM(total_issued) AS total_quantity,
-            COUNT(DISTINCT "location") AS locations_count
+            COUNT(DISTINCT location) AS locations_count
         FROM item_value
-        GROUP BY "item"
+        GROUP BY item
     )
     SELECT
-        "item",
+        item,
         total_value,
         total_quantity,
         locations_count,
@@ -64,8 +64,10 @@ def create_abc_analysis_view():
     
     # Verify
     result = session.sql("SELECT * FROM abc_analysis").to_pandas()
-    print(f"✅ ABC Analysis has {len(result)} items")
-    print(result)
+    if len(result) > 0:
+        print(result[['ITEM', 'TOTAL_VALUE', 'ABC_CATEGORY', 'CATEGORY_DESCRIPTION']].head())
+    else:
+        print("   (No ABC analysis data available)")
 
 if __name__ == "__main__":
     create_abc_analysis_view()

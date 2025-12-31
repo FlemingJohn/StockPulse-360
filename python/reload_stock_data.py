@@ -103,16 +103,37 @@ def reload_stock_data():
             print(f"⚠️  Could not truncate table: {e}")
             print("   Table might be empty, continuing...")
         
-        # Write to Snowflake
-        print(f"\n📤 Loading {len(df_mapped)} rows into RAW_STOCK...")
-        session.write_pandas(
-            df_mapped,
-            'RAW_STOCK',
-            auto_create_table=False,
-            overwrite=False  # Table is already cleared
-        )
+        # Write to Snowflake using chunked inserts (to avoid PUT command errors)
+        print(f"\n📤 Loading {len(df_mapped)} rows into RAW_STOCK using chunked inserts...")
         
-        print("✅ Data loaded successfully")
+        # Function to batch insert data
+        def batch_insert(df, table_name, chunk_size=500):
+            total_rows = len(df)
+            for start in range(0, total_rows, chunk_size):
+                end = min(start + chunk_size, total_rows)
+                chunk = df.iloc[start:end]
+                
+                # Convert chunk to values list for SQL
+                values_list = []
+                for _, row in chunk.iterrows():
+                    # Format last_updated_date carefully
+                    date_val = row['last_updated_date']
+                    date_str = date_val.strftime('%Y-%m-%d') if hasattr(date_val, 'strftime') else str(date_val)
+                    
+                    # Escape single quotes for SQL safely
+                    safe_location = str(row['location']).replace("'", "''")
+                    safe_item = str(row['item']).replace("'", "''")
+                    
+                    val = f"('{safe_location}', '{safe_item}', {row['current_stock']}, {row['issued_qty']}, {row['received_qty']}, '{date_str}')"
+                    values_list.append(val)
+                
+                sql = f'INSERT INTO {table_name} (location, item, current_stock, issued_qty, received_qty, last_updated_date) VALUES {", ".join(values_list)}'
+                session.sql(sql).collect()
+                print(f"   ✅ Processed {end}/{total_rows} rows...")
+
+        batch_insert(df_mapped, 'RAW_STOCK')
+        
+        print("✅ Data loaded successfully using batch inserts")
         
         # Verify
         count = session.table("RAW_STOCK").count()
