@@ -23,7 +23,7 @@ def render_supplier_page():
         "Purchase Orders",
         "Performance Metrics",
         "Supplier Comparison",
-        "Delivery Schedule"
+        "Delivery Calendar"
     ])
     
     with tab1:

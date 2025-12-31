@@ -31,3 +31,6 @@ python-dotenv>=1.0.0
 
 # Required: For Slack/webhook alerts
 requests>=2.31.0
+
+# Calendar Component
+streamlit-calendar>=0.1.0

@@ -373,9 +373,10 @@ def load_supplier_cost_analysis():
             return pd.DataFrame()
     return pd.DataFrame()
 
-@st.cache_data(ttl=300)
+# Start of delivery schedule loader
 def load_delivery_schedule():
-    """Load delivery schedule data."""
+    """Load delivery schedule data (Uncached to force update)."""
+    # Loading delivery schedule with fresh cache
     session = get_session()
     if session:
         try:

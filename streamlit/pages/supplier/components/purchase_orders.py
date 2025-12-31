@@ -13,8 +13,12 @@ def render_purchase_orders():
         with col1:
             st.metric("Total POs", len(po_data))
         with col2:
-            total_value = po_data['ORDER_COST'].sum()
-            st.metric("Total Value", f"₹{total_value:,.0f}")
+            # Column name is TOTAL_COST in database
+            if 'TOTAL_COST' in po_data.columns:
+                total_value = po_data['TOTAL_COST'].sum()
+                st.metric("Total Value", f"₹{total_value:,.0f}")
+            else:
+                st.error(f"Missing cost column. Expected 'TOTAL_COST'. Available: {po_data.columns.tolist()}")
         with col3:
             unique_suppliers = po_data['SUPPLIER_NAME'].nunique()
             st.metric("Active Suppliers", unique_suppliers)
