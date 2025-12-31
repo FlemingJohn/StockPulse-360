@@ -176,6 +176,7 @@ def load_stock_risk_data():
     if session:
         try:
             df = session.table("stock_risk").to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.error(f"Error loading stock_risk table: {e}")
@@ -189,6 +190,7 @@ def load_critical_alerts():
     if session:
         try:
             df = session.table("critical_alerts").to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.error(f"Error loading critical_alerts table: {e}")
@@ -202,6 +204,7 @@ def load_location_summary():
     if session:
         try:
             df = session.table("location_summary").to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.error(f"Error loading location_summary table: {e}")
@@ -210,14 +213,29 @@ def load_location_summary():
 
 @st.cache_data(ttl=300)
 def load_procurement_export():
-    """Load procurement recommendations."""
+    """Load procurement recommendations (formatted view)."""
     session = get_session()
     if session:
         try:
             df = session.table("procurement_export").to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
-            st.error(f"Error loading procurement_export table: {e}")
+            st.error(f"Error loading procurement_export view: {e}")
+            return pd.DataFrame()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_reorder_recommendations():
+    """Load raw reorder recommendations data."""
+    session = get_session()
+    if session:
+        try:
+            df = session.table("reorder_recommendations").to_pandas()
+            df.columns = [c.upper() for c in df.columns]
+            return df
+        except Exception as e:
+            st.error(f"Error loading reorder_recommendations table: {e}")
             return pd.DataFrame()
     return pd.DataFrame()
 
@@ -228,6 +246,7 @@ def load_item_performance():
     if session:
         try:
             df = session.table("item_performance").to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.error(f"Error loading item_performance table: {e}")
@@ -242,6 +261,7 @@ def load_seasonal_forecasts():
         try:
             # Use lowercase table name (the one with data)
             df = session.sql('SELECT * FROM "seasonal_forecasts"').to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.warning(f"Seasonal forecasts not available: {e}")
@@ -256,6 +276,7 @@ def load_abc_analysis():
     if session:
         try:
             df = session.sql('SELECT * FROM abc_analysis').to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.warning(f"ABC analysis not available: {e}")
@@ -269,6 +290,7 @@ def load_stockout_impact():
     if session:
         try:
             df = session.sql('SELECT * FROM stockout_impact').to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.warning(f"Stockout impact not available: {e}")
@@ -282,6 +304,7 @@ def load_budget_tracking():
     if session:
         try:
             df = session.sql('SELECT * FROM budget_tracking').to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.warning(f"Budget tracking not available: {e}")
@@ -295,6 +318,7 @@ def load_purchase_orders():
     if session:
         try:
             df = session.sql('SELECT * FROM purchase_orders').to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.warning(f"Purchase orders not available: {e}")
@@ -308,6 +332,7 @@ def load_supplier_performance():
     if session:
         try:
             df = session.sql('SELECT * FROM supplier_performance').to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.warning(f"Supplier performance not available: {e}")
@@ -321,6 +346,7 @@ def load_supplier_comparison():
     if session:
         try:
             df = session.sql('SELECT * FROM supplier_comparison').to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.warning(f"Supplier comparison not available: {e}")
@@ -334,6 +360,7 @@ def load_supplier_cost_analysis():
     if session:
         try:
             df = session.sql('SELECT * FROM supplier_cost_analysis').to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.warning(f"Supplier cost analysis not available: {e}")
@@ -347,6 +374,7 @@ def load_delivery_schedule():
     if session:
         try:
             df = session.sql('SELECT * FROM delivery_schedule').to_pandas()
+            df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
             st.warning(f"Delivery schedule not available: {e}")

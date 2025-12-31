@@ -9,7 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 from utils import get_svg_icon, section_header, load_stock_risk_data, load_critical_alerts
-from utils import load_procurement_export, load_item_performance, get_status_color, load_seasonal_forecasts, load_abc_analysis
+from utils import load_procurement_export, load_item_performance, get_status_color, load_seasonal_forecasts, load_abc_analysis, load_reorder_recommendations
 from utils import load_stockout_impact, load_budget_tracking
 from utils import load_purchase_orders, load_supplier_performance, load_supplier_comparison, load_supplier_cost_analysis, load_delivery_schedule
 from alert_sender import AlertSender
@@ -35,20 +35,25 @@ def render_page_sidebar_filters(df, page_name=""):
     if df is None or df.empty:
         return df
         
-    st.sidebar.markdown(section_header(f"{page_name} Filters", "filter"), unsafe_allow_html=True)
+    # Get the container from session state or fallback to sidebar
+    container = st.session_state.get('filter_container', st.sidebar)
+    
+    container.markdown(f'<div class="sidebar-filter-header">{page_name} Filters</div>', unsafe_allow_html=True)
+    
+    # Selection logic
+    filtered_df = df.copy()
     
     # Location Filter
-    filtered_df = df.copy()
     if 'LOCATION' in df.columns:
         loc_options = ['All'] + sorted(df['LOCATION'].unique().tolist())
-        selected_loc = st.sidebar.selectbox("Location", loc_options, key=f"filter_loc_{page_name}")
+        selected_loc = container.selectbox("Select Location", loc_options, key=f"filter_loc_{page_name}")
         if selected_loc != 'All':
             filtered_df = filtered_df[filtered_df['LOCATION'] == selected_loc]
             
     # Item Filter
     if 'ITEM' in df.columns:
         item_options = ['All'] + sorted(filtered_df['ITEM'].unique().tolist())
-        selected_item = st.sidebar.selectbox("Item", item_options, key=f"filter_item_{page_name}")
+        selected_item = container.selectbox("Select Item", item_options, key=f"filter_item_{page_name}")
         if selected_item != 'All':
             filtered_df = filtered_df[filtered_df['ITEM'] == selected_item]
             
@@ -75,11 +80,12 @@ def render_overview_page():
     # Sidebar Filters
     filtered_data = render_page_sidebar_filters(stock_data, "Overview")
     
+    container = st.session_state.get('filter_container', st.sidebar)
+    
     # Additional Status Filter for Overview
     if not filtered_data.empty and 'STOCK_STATUS' in filtered_data.columns:
-        st.sidebar.markdown("<br>", unsafe_allow_html=True)
         status_options = ['All'] + sorted(filtered_data['STOCK_STATUS'].unique().tolist())
-        selected_status = st.sidebar.multiselect("Stock Status", status_options, default=['All'], key="ov_status")
+        selected_status = container.multiselect("Stock Status", status_options, default=['All'], key="ov_status")
         if 'All' not in selected_status and selected_status:
             filtered_data = filtered_data[filtered_data['STOCK_STATUS'].isin(selected_status)]
 
@@ -198,11 +204,12 @@ def render_alerts_page():
     # Sidebar Filters
     filtered_data = render_page_sidebar_filters(alerts_data, "Alerts")
     
+    container = st.session_state.get('filter_container', st.sidebar)
+    
     # Status Multi-select for Alerts
     if not filtered_data.empty:
-        st.sidebar.markdown("<br>", unsafe_allow_html=True)
         status_options = sorted(alerts_data['STOCK_STATUS'].unique().tolist())
-        selected_status = st.sidebar.multiselect("Filter by Status", status_options, default=status_options, key="alert_status_filter")
+        selected_status = container.multiselect("Filter by Status", status_options, default=status_options, key="alert_status_filter")
         if selected_status:
             filtered_data = filtered_data[filtered_data['STOCK_STATUS'].isin(selected_status)]
     
@@ -313,16 +320,74 @@ def render_alerts_page():
 
 def render_reorder_page():
     """Render Reorder Recommendations page with its own filters."""
-    # Load raw procurement data
-    procurement_data = load_procurement_export()
+    container = st.session_state.get('filter_container', st.sidebar)
     
-    # Sidebar Filters
-    filtered_data = render_page_sidebar_filters(procurement_data, "Reorder")
+    # Sidebar Controls for Simulation (at the top)
+    container.markdown(f'<div class="sidebar-filter-header">Simulation Settings</div>', unsafe_allow_html=True)
     
+    # Dynamic Safety Days Slider with Session State
+    if 'safety_days_sim' not in st.session_state:
+        st.session_state['safety_days_sim'] = 30
+        
+    def reset_simulation():
+        st.session_state['safety_days_sim'] = 30
+        
+    container.button("Reset Simulation", use_container_width=True, on_click=reset_simulation)
+    
+    safety_days = container.slider(
+        "Secure Stock For (Days)", 
+        min_value=14, 
+        max_value=120, 
+        key='safety_days_sim',
+        step=7,
+        help="Simulate the budget needed to secure stock for a specific duration."
+    )
+    
+    # Load raw data
+    raw_procurement = load_reorder_recommendations()
+    po_data = load_purchase_orders()
+    
+    # Sidebar Filters - apply to raw data first
+    filtered_data = render_page_sidebar_filters(raw_procurement, "Reorder")
+    
+    # Join with PO Data to get Best Supplier and Reliability Score
+    if not filtered_data.empty and not po_data.empty:
+        # Merge to get supplier info
+        # Note: po_data has LOCATION, ITEM, SUPPLIER_NAME, RELIABILITY_SCORE
+        filtered_data = filtered_data.merge(
+            po_data[['LOCATION', 'ITEM', 'SUPPLIER_NAME', 'RELIABILITY_SCORE']], 
+            on=['LOCATION', 'ITEM'], 
+            how='left'
+        )
+        # Fill missing scores/names
+        filtered_data['SUPPLIER_NAME'] = filtered_data['SUPPLIER_NAME'].fillna('N/A')
+        filtered_data['RELIABILITY_SCORE'] = filtered_data['RELIABILITY_SCORE'].fillna(75.0)
+
+    # Dynamic Recalculation based on Safety Days (Standardized to UPPERCASE)
+    if not filtered_data.empty:
+        # Reset index to avoid alignment issues during calculation
+        filtered_data = filtered_data.reset_index(drop=True)
+        
+        # Recalculate based on Slider
+        # Simulation Quantity = (safety_days - days_until_stockout) * avg_usage
+        filtered_data['SIMULATION_QUANTITY'] = (safety_days - filtered_data['DAYS_UNTIL_STOCKOUT']).clip(lower=0) * filtered_data['AVG_DAILY_USAGE']
+        filtered_data['SIMULATION_QUANTITY'] = filtered_data['SIMULATION_QUANTITY'].fillna(0)
+        
+        # Calculate Unit Cost (Estimated Cost / Reorder Quantity)
+        # If Reorder Quantity is 0, we can't get unit cost easily, fallback to 10
+        filtered_data['UNIT_COST'] = filtered_data['ESTIMATED_COST'] / filtered_data['REORDER_QUANTITY'].replace(0, 1)
+        filtered_data['UNIT_COST'] = filtered_data['UNIT_COST'].fillna(10.0)
+        filtered_data['SIMULATION_COST'] = filtered_data['SIMULATION_QUANTITY'] * filtered_data['UNIT_COST']
+        filtered_data['SIMULATION_COST'] = filtered_data['SIMULATION_COST'].fillna(0)
+        
+        # Calculate Delta from 30-day baseline
+        filtered_data['COST_DELTA'] = filtered_data['SIMULATION_COST'] - filtered_data['ESTIMATED_COST']
+        filtered_data['QTY_DELTA'] = filtered_data['SIMULATION_QUANTITY'] - filtered_data['REORDER_QUANTITY']
+
     if EXTRAS_AVAILABLE:
         colored_header(
             label="Reorder Recommendations",
-            description="Smart procurement suggestions based on stock levels",
+            description=f"Smart suggestions simulating {safety_days} days of coverage",
             color_name="green-70"
         )
     else:
@@ -333,15 +398,17 @@ def render_reorder_page():
     if filtered_data is not None and not filtered_data.empty:
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("📦 Items to Reorder", len(procurement_data),
+            st.metric("Items to Reorder", len(filtered_data),
                      help="Total items requiring reorder")
         with col2:
-            total_cost = procurement_data['Estimated Cost (₹)'].sum()
-            st.metric("💰 Total Estimated Cost", f"₹{total_cost:,.0f}",
-                     help="Total procurement budget required")
+            total_cost = filtered_data['SIMULATION_COST'].sum()
+            delta_cost = filtered_data['COST_DELTA'].sum()
+            st.metric("Total Estimated Cost", f"₹{total_cost:,.0f}",
+                     delta=f"₹{delta_cost:,.0f} vs Baseline", delta_color="inverse",
+                     help=f"Projected budget for {safety_days} days of stock")
         with col3:
-            urgent_count = len(procurement_data[procurement_data['Order Within (Days)'] <= 1])
-            st.metric("⚡ Urgent Orders", urgent_count,
+            urgent_count = len(filtered_data[filtered_data['DAYS_UNTIL_STOCKOUT'] <= 1])
+            st.metric("Urgent Orders", urgent_count,
                      help="Items needing immediate procurement")
         
         if EXTRAS_AVAILABLE:
@@ -353,9 +420,85 @@ def render_reorder_page():
             )
         
         st.divider()
+
+        # Procurement Strategy Matrix (Bubble Chart)
+        st.subheader("Procurement Strategy Matrix")
+        st.markdown(f"*Strategic view of Urgency vs. Investment (Simulated: **{safety_days} Days**)*")
         
+        # Create bubble chart
+        fig = px.scatter(
+            filtered_data,
+            x="DAYS_UNTIL_STOCKOUT",
+            y="SIMULATION_COST",
+            size="SIMULATION_QUANTITY",
+            color="RELIABILITY_SCORE",
+            hover_name="ITEM",
+            custom_data=['ESTIMATED_COST', 'REORDER_QUANTITY', 'COST_DELTA', 'SIMULATION_QUANTITY'],
+            labels={
+                "DAYS_UNTIL_STOCKOUT": "Order Within (Days)",
+                "SIMULATION_COST": "Simulated Cost (₹)",
+                "RELIABILITY_SCORE": "Reliability (%)",
+                "SIMULATION_QUANTITY": "Simulated Qty"
+            },
+            color_continuous_scale="RdYlGn",
+            template="plotly_white",
+            height=500,
+            size_max=40,
+            range_x=[-1, max(30, filtered_data['DAYS_UNTIL_STOCKOUT'].max() * 1.1)],
+            range_y=[0, max(1000, filtered_data['SIMULATION_COST'].max() * 1.2)]
+        )
+        
+        fig.update_traces(
+            hovertemplate="<br>".join([
+                "<b>%{hovertext}</b>",
+                "Ugency: Within %{x} days",
+                "Simulated Cost: ₹%{y:,.0f}",
+                "Simulated Qty: %{customdata[3]:,.0f}",
+                "-----------------------",
+                "Baseline Cost: ₹%{customdata[0]:,.0f}",
+                "Baseline Qty: %{customdata[1]:,.0f}",
+                "Delta: ₹%{customdata[2]:,.0f}",
+                "<extra></extra>"
+            ])
+        )
+        
+        fig.update_layout(
+            margin=dict(l=20, r=20, t=20, b=20),
+            hovermode="closest",
+            coloraxis_colorbar=dict(title="Reliability %")
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        st.divider()
+
+        # Custom Dataframe with High Risk highlighting
+        def highlight_risk(row):
+            if row['Supplier Reliability (%)'] < 75:
+                return ['background-color: #ffebee; border-left: 5px solid #ef5350'] * len(row)
+            return [''] * len(row)
+
+        display_df = filtered_data.copy()
+        
+        # Select and Rename for clarity in display
+        display_df = display_df[[
+            'LOCATION', 'ITEM', 'CURRENT_STOCK', 'DAYS_UNTIL_STOCKOUT', 
+            'SIMULATION_QUANTITY', 'SIMULATION_COST', 'SUPPLIER_NAME', 'RELIABILITY_SCORE'
+        ]]
+        
+        display_df = display_df.rename(columns={
+            'LOCATION': 'Location',
+            'ITEM': 'Item Name',
+            'CURRENT_STOCK': 'Current Stock',
+            'DAYS_UNTIL_STOCKOUT': 'Order Within (Days)',
+            'SIMULATION_COST': 'Total Cost (₹)',
+            'SIMULATION_QUANTITY': 'Order Quantity',
+            'SUPPLIER_NAME': 'Supplier',
+            'RELIABILITY_SCORE': 'Supplier Reliability (%)'
+        })
+
         st.dataframe(
-            procurement_data,
+            display_df.style.apply(highlight_risk, axis=1),
             use_container_width=True,
             height=500,
             column_config={
@@ -364,15 +507,22 @@ def render_reorder_page():
                     help="Days until stockout",
                     format="%d days"
                 ),
-                "Estimated Cost (₹)": st.column_config.NumberColumn(
-                    "Estimated Cost (₹)",
-                    help="Estimated procurement cost",
+                "Total Cost (₹)": st.column_config.NumberColumn(
+                    "Total Cost (₹)",
+                    help="Estimated procurement cost for selected safety days",
                     format="₹%.2f"
+                ),
+                "Supplier Reliability (%)": st.column_config.ProgressColumn(
+                    "Supplier Reliability (%)",
+                    help="Supplier performance score",
+                    format="%.0f%%",
+                    min_value=0,
+                    max_value=100
                 )
             }
         )
         
-        csv = procurement_data.to_csv(index=False)
+        csv = display_df.to_csv(index=False)
         st.download_button(
             label="Download Procurement List (CSV)",
             data=csv,
@@ -406,13 +556,13 @@ def render_ai_ml_page():
             total_forecasts = len(forecasts)
             st.metric("Total Forecasts", total_forecasts, help="Total number of AI-generated forecasts")
         with col2:
-            unique_items = forecasts['item'].nunique() if 'item' in forecasts.columns else 0
+            unique_items = forecasts['ITEM'].nunique() if 'ITEM' in forecasts.columns else 0
             st.metric("Items Analyzed", unique_items, help="Number of unique items with forecasts")
         with col3:
-            unique_locations = forecasts['location'].nunique() if 'location' in forecasts.columns else 0
+            unique_locations = forecasts['LOCATION'].nunique() if 'LOCATION' in forecasts.columns else 0
             st.metric("Locations", unique_locations, help="Number of locations covered")
         with col4:
-            avg_forecast = forecasts['forecasted_usage'].mean() if 'forecasted_usage' in forecasts.columns else 0
+            avg_forecast = forecasts['FORECASTED_USAGE'].mean() if 'FORECASTED_USAGE' in forecasts.columns else 0
             st.metric("Avg Forecast", f"{avg_forecast:.1f}", help="Average forecasted usage")
         
         st.divider()
@@ -427,28 +577,28 @@ def render_ai_ml_page():
             # Filter by location and item
             col1, col2 = st.columns(2)
             with col1:
-                locations = ['All'] + sorted(forecasts['location'].unique().tolist()) if 'location' in forecasts.columns else ['All']
+                locations = ['All'] + sorted(forecasts['LOCATION'].unique().tolist()) if 'LOCATION' in forecasts.columns else ['All']
                 selected_location = st.selectbox("Select Location", locations, key="ai_location")
             with col2:
-                items = ['All'] + sorted(forecasts['item'].unique().tolist()) if 'item' in forecasts.columns else ['All']
+                items = ['All'] + sorted(forecasts['ITEM'].unique().tolist()) if 'ITEM' in forecasts.columns else ['All']
                 selected_item = st.selectbox("Select Item", items, key="ai_item")
             
             # Filter data
             filtered_forecasts = forecasts.copy()
             if selected_location != 'All':
-                filtered_forecasts = filtered_forecasts[filtered_forecasts['location'] == selected_location]
+                filtered_forecasts = filtered_forecasts[filtered_forecasts['LOCATION'] == selected_location]
             if selected_item != 'All':
-                filtered_forecasts = filtered_forecasts[filtered_forecasts['item'] == selected_item]
+                filtered_forecasts = filtered_forecasts[filtered_forecasts['ITEM'] == selected_item]
             
             if not filtered_forecasts.empty:
                 # Create line chart
                 fig = px.line(
                     filtered_forecasts,
-                    x='forecast_date',
-                    y='forecasted_usage',
-                    color='item' if selected_location != 'All' else 'location',
+                    x='FORECAST_DATE',
+                    y='FORECASTED_USAGE',
+                    color='ITEM' if selected_location != 'All' else 'LOCATION',
                     title=f"Seasonal Forecast - {selected_location} - {selected_item}",
-                    labels={'forecasted_usage': 'Forecasted Usage', 'forecast_date': 'Date'},
+                    labels={'FORECASTED_USAGE': 'Forecasted Usage', 'FORECAST_DATE': 'Date'},
                     markers=True
                 )
                 fig.update_layout(
@@ -462,17 +612,17 @@ def render_ai_ml_page():
                 st.plotly_chart(fig, use_container_width=True)
                 
                 # Show seasonal factors
-                if 'seasonal_factor' in filtered_forecasts.columns:
+                if 'SEASONAL_FACTOR' in filtered_forecasts.columns:
                     st.markdown("#### Seasonal Adjustment Factors")
                     st.markdown("Values > 1.0 indicate higher demand, < 1.0 indicate lower demand")
                     
                     fig2 = px.bar(
                         filtered_forecasts,
-                        x='forecast_date',
-                        y='seasonal_factor',
-                        color='seasonal_factor',
+                        x='FORECAST_DATE',
+                        y='SEASONAL_FACTOR',
+                        color='SEASONAL_FACTOR',
                         title="Seasonal Demand Patterns",
-                        labels={'seasonal_factor': 'Seasonal Factor', 'forecast_date': 'Date'},
+                        labels={'SEASONAL_FACTOR': 'Seasonal Factor', 'FORECAST_DATE': 'Date'},
                         color_continuous_scale=[[0, '#DC143C'], [0.5, '#FFA500'], [1, '#29B5E8']]
                     )
                     fig2.update_layout(
@@ -568,11 +718,11 @@ def render_analytics_page():
                 # Bar chart showing value by item
                 fig = px.bar(
                     abc_data,
-                    x='item',
+                    x='ITEM',
                     y='TOTAL_VALUE',
                     color='ABC_CATEGORY',
                     title="Item Value Distribution (ABC Classification)",
-                    labels={'TOTAL_VALUE': 'Total Value (₹)', 'item': 'Item'},
+                    labels={'TOTAL_VALUE': 'Total Value (₹)', 'ITEM': 'Item'},
                     color_discrete_map={'A': '#DC143C', 'B': '#FFA500', 'C': '#32CD32'}
                 )
                 fig.update_layout(
@@ -588,7 +738,7 @@ def render_analytics_page():
                 fig2 = px.pie(
                     abc_data,
                     values='TOTAL_VALUE',
-                    names='item',
+                    names='ITEM',
                     title="Value Contribution",
                     color='ABC_CATEGORY',
                     color_discrete_map={'A': '#DC143C', 'B': '#FFA500', 'C': '#32CD32'}
@@ -602,7 +752,7 @@ def render_analytics_page():
             # Data table
             st.markdown("#### ABC Classification Details")
             st.dataframe(
-                abc_data[['item', 'TOTAL_VALUE', 'TOTAL_QUANTITY', 'VALUE_PERCENTAGE', 'ABC_CATEGORY', 'CATEGORY_DESCRIPTION']],
+                abc_data[['ITEM', 'TOTAL_VALUE', 'TOTAL_QUANTITY', 'VALUE_PERCENTAGE', 'ABC_CATEGORY', 'CATEGORY_DESCRIPTION']],
                 use_container_width=True,
                 height=200
             )
@@ -687,12 +837,12 @@ def render_analytics_page():
                 # Bar chart by item and severity
                 fig = px.bar(
                     impact_data.sort_values('ACTION_PRIORITY'),
-                    x='item',
+                    x='ITEM',
                     y='PATIENTS_AFFECTED_UNTIL_STOCKOUT',
                     color='IMPACT_SEVERITY',
-                    facet_col='location',
+                    facet_col='LOCATION',
                     title="Patient Impact by Item and Location",
-                    labels={'PATIENTS_AFFECTED_UNTIL_STOCKOUT': 'Patients Affected', 'item': 'Item'},
+                    labels={'PATIENTS_AFFECTED_UNTIL_STOCKOUT': 'Patients Affected', 'ITEM': 'Item'},
                     color_discrete_map={
                         'LIFE_THREATENING': '#8B0000',
                         'HIGH_SEVERITY': '#DC143C',
@@ -728,7 +878,7 @@ def render_analytics_page():
             # Data table
             st.markdown("#### Priority Action Items")
             st.dataframe(
-                impact_data[['location', 'item', 'STOCK_STATUS', 'PATIENTS_AFFECTED_UNTIL_STOCKOUT', 
+                impact_data[['LOCATION', 'ITEM', 'STOCK_STATUS', 'PATIENTS_AFFECTED_UNTIL_STOCKOUT', 
                             'IMPACT_SEVERITY', 'ACTION_PRIORITY', 'ABC_CATEGORY']].sort_values('ACTION_PRIORITY'),
                 use_container_width=True,
                 height=300

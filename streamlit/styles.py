@@ -117,35 +117,10 @@ CUSTOM_CSS = """
         transform: translateY(-1px);
     }
     
-    /* Sidebar - Snowflake Theme */
+    /* Premium Side Nav - Image Matched */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #FFFFFF 0%, #F0F2F6 100%);
-        border-right: 2px solid #29B5E8;
-    }
-    
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background-color: #F0F2F6;
-        border-radius: 8px 8px 0 0;
-        padding: 10px 20px;
-        color: #0F4C81;
-        font-weight: 600;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #29B5E8 0%, #1E88E5 100%);
-        color: white;
-    }
-    
-    /* Dataframe Styling */
-    .dataframe {
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        background-color: #0B1727 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     /* Metrics */
@@ -195,25 +170,97 @@ CUSTOM_CSS = """
         margin-bottom: 2rem;
         box-shadow: 0 2px 8px rgba(41, 181, 232, 0.1);
     }
+
+    /* PREMIUM SIDEBAR ENHANCEMENTS */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+        color: #E3F2FD;
+    }
+
+    /* Target the radio options specifically */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] {
+        gap: 8px !important;
+    }
+
+    /* Style for the radio items to look like nav links */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
+        background-color: transparent !important;
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
+        transition: all 0.3s ease !important;
+        border: 1px solid transparent !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        width: 100% !important;
+        margin-bottom: 4px !important;
+    }
+
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: #FFFFFF !important;
+    }
+
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-checked="true"] {
+        background-color: rgba(41, 181, 232, 0.15) !important;
+        color: #29B5E8 !important;
+        border: 1px solid rgba(41, 181, 232, 0.3) !important;
+    }
     
-    /* Navigation Menu */
-    .nav-item {
-        padding: 0.8rem 1rem;
-        border-radius: 8px;
-        margin-bottom: 0.5rem;
+    [data-testid="stSidebar"] div[data-testid="stRadio"] label p {
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+    }
+
+    /* Sidebar Divider */
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* Sidebar Header Branding */
+    .sidebar-logo-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 1.5rem 0;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .sidebar-logo-text {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #FFFFFF;
+        letter-spacing: -0.02em;
+    }
+
+    /* Input/Select boxes in Sidebar */
+    [data-testid="stSidebar"] div[data-baseweb="select"] {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 10px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    [data-testid="stSidebar"] label[data-testid="stWidgetLabel"] p {
+        color: rgba(255, 255, 255, 0.6) !important;
+        font-size: 0.8rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+    }
+
+    /* Sidebar Fixed Bottom Footer */
+    .sidebar-footer {
+        margin-top: auto;
+        padding: 2rem 0 1rem 0;
+    }
+    
+    .sidebar-footer-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        color: #FFFFFF;
         transition: all 0.3s;
-        cursor: pointer;
-    }
-    
-    .nav-item:hover {
-        background-color: #E3F2FD;
-        transform: translateX(5px);
-    }
-    
-    .nav-item-selected {
-        background: linear-gradient(135deg, #29B5E8 0%, #1E88E5 100%);
-        color: white;
-        font-weight: 600;
     }
 </style>
 """

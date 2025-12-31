@@ -55,28 +55,21 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 def main():
     """Main application entry point."""
     
-    # Header with SVG Snowflake icon
-    snowflake_svg = get_svg_icon('snowflake', size=48, color="#29B5E8")
-    st.markdown(f'''
-    <div style="text-align: center; margin-bottom: 1rem;">
-        <div style="display: inline-block; vertical-align: middle; margin-right: 15px;">
-            {snowflake_svg}
-        </div>
-        <div class="main-header" style="display: inline-block; vertical-align: middle;">
-            StockPulse 360
-        </div>
-    </div>
-    <p class="subtitle">AI-Driven Stock Health Monitor | Powered by Snowflake</p>
-    ''', unsafe_allow_html=True)
-    
-    st.divider()
-    
-    # Sidebar Navigation
+    # Sidebar Navigation & Controls
     with st.sidebar:
-        st.markdown(section_header("Navigation", "map"), unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        # 1. Premium Branding Header
+        snowflake_svg = get_svg_icon('snowflake', size=32, color="#29B5E8")
+        st.markdown(f'''
+        <div class="sidebar-logo-container">
+            {snowflake_svg}
+            <span class="sidebar-logo-text">StockPulse 360</span>
+        </div>
+        ''', unsafe_allow_html=True)
         
-        # Navigation menu
+        # 2. Navigation List (We need to know the page first to render filters above it)
+        # However, to match the user request "fildes at top in side and nav in belwo", 
+        # we'll use a placeholder for filters or render navigation after determining the page.
+        
         nav_options = [
             "Overview & Heatmap",
             "Critical Alerts",
@@ -86,35 +79,32 @@ def main():
             "Supplier Management"
         ]
         
+        # We'll use a container for filters that will be populated by the pages
+        filter_container = st.container()
+        
         selected_page = st.radio(
             "Select Section",
             nav_options,
             label_visibility="collapsed"
         )
         
-        st.divider()
+        st.markdown("<div style='margin-bottom: 2rem;'></div>", unsafe_allow_html=True)
         
-        # Refresh button
+        st.spacer = st.markdown("<div style='flex-grow: 1;'></div>", unsafe_allow_html=True)
+        
+        # 3. Sidebar Footer
+        st.markdown('---', unsafe_allow_html=True)
         refresh_svg = get_svg_icon('refresh', size=18, color="#FFFFFF")
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            st.markdown(f'<div style="padding-top: 8px;">{refresh_svg}</div>', unsafe_allow_html=True)
-        with col2:
-            if st.button("Refresh Data", use_container_width=True):
-                st.cache_data.clear()
-                st.rerun()
-        
-        st.divider()
-        
-        # About section
-        with st.expander("About StockPulse 360"):
-            st.markdown("""
-            **StockPulse 360** helps hospitals, ration shops, and NGOs:
-            - Monitor stock health in real-time
-            - Predict stock-outs early
-            - Get reorder recommendations
-            - Prevent waste and shortages
-            """)
+        if st.button("Refresh System Data", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
+            
+        with st.expander("System Info"):
+            st.markdown(f"Last Sync: {datetime.now().strftime('%H:%M:%S')}")
+            st.markdown("Version 1.0.1")
+
+    # Store filter container in session state so pages can access it
+    st.session_state['filter_container'] = filter_container
     
     # Main Content Area
     st.divider()
