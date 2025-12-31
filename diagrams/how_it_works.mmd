@@ -1,0 +1,31 @@
+graph TD
+    subgraph "1. Data Ingestion"
+        A[🏥 Hospitals] -->|CSV Upload| B[❄️ Raw Stage]
+        C[🍚 Ration Shops] -->|API Push| B
+        B -->|Snowpipe| D[RAW_STOCK Table]
+    end
+
+    subgraph "2. Transformation Pipeline"
+        D -->|Stream| E[Process Task]
+        E --> F[Stock Stats DT]
+        F -->|Calc Rules| G[Stock Health DT]
+        G -->|Logic| H[Reorder Recs DT]
+    end
+
+    subgraph "3. AI & Intelligence"
+        D -->|Snowpark Python| I[Seasonal Forecaster]
+        I -->|Forecasts| G
+        G -->|Thresholds| J[Critical Alerts]
+    end
+
+    subgraph "4. Action & Consumption"
+        G & H & I --> K[💻 Streamlit Dashboard]
+        J -->|Email/Slack| L[🔔 Notifications]
+        K -->|Write-Back| M[Unistore Hybrid Table]
+    end
+
+    style D fill:#29B5E8,color:white
+    style F fill:#29B5E8,color:white
+    style G fill:#29B5E8,color:white
+    style I fill:#11567f,color:white
+    style K fill:#FF4B4B,color:white

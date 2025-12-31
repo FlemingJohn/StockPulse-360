@@ -90,19 +90,7 @@ Healthcare facilities, ration shops, and NGOs face **life-threatening inventory 
 
 ### How It Works
 
-```mermaid
-graph LR
-    A[📊 Real Data] -->|Automated Ingestion| B[❄️ Snowflake]
-    B -->|AI Analysis| C[🤖 Predictions]
-    C -->|Smart Alerts| D[📱 Stakeholders]
-    D -->|Quick Action| E[✅ Lives Saved]
-    
-    style A fill:#FFE5E5
-    style B fill:#E5F3FF
-    style C fill:#E5FFE5
-    style D fill:#FFF5E5
-    style E fill:#90EE90
-```
+![How It Works Diagram](diagrams/how_it_works.mmd)
 
 ### The StockPulse 360 Approach
 
@@ -289,45 +277,14 @@ streamlit run streamlit/app.py
 
 ## 🏗️ Architecture
 
-```mermaid
-graph TB
-    subgraph "Data Ingestion"
-        A[CSV Upload] -->|Snowpipe| B[Snowflake Stage]
-        B --> C[RAW_STOCK Table]
-    end
-    
-    subgraph "Data Processing"
-        C --> D[Dynamic Tables]
-        D --> E[stock_stats]
-        D --> F[stock_health]
-        D --> G[reorder_recommendations]
-    end
-    
-    subgraph "AI/ML Layer"
-        H[Seasonal Forecaster<br/>✅ 63 forecasts]
-        I[ABC Analysis<br/>✅ 3 items classified]
-        J[Stockout Impact<br/>✅ 9 items analyzed]
-        K[Budget Tracking<br/>✅ Real-time monitoring]
-    end
-    
-    E & F & G --> H & I & J & K
-    
-    subgraph "Presentation"
-        H & I & J & K --> L[Streamlit Dashboard]
-        L --> M[Interactive Visualizations]
-        L --> N[Alerts & Notifications]
-        L --> O[Export & Reports]
-    end
-    
-    style H fill:#90EE90
-    style I fill:#90EE90
-    style J fill:#90EE90
-    style K fill:#90EE90
-```
+![StockPulse Architecture](diagrams/architecture.mmd)
 
 **Technology Stack:**
 - **Data Warehouse:** Snowflake (Dynamic Tables, Streams, Tasks)
-- **AI/ML:** Python (Pandas, Scikit-learn), Snowflake Cortex
+- **Transactional:** Snowflake Unistore (Hybrid Tables) *⚠️ [Paid Enterprise Account Only]*
+- **AI/ML:** 
+  - **Snowflake Cortex:** `SNOWFLAKE.ML.FORECAST` for Time-Series Forecasting
+  - **Snowpark Python:** Custom logic for Anomaly Detection & Seasonal Analysis
 - **Visualization:** Streamlit, Plotly
 - **Automation:** Snowflake Tasks (Hourly/Daily schedules)
 
@@ -458,6 +415,7 @@ StockPulse-360/
 │   ├── dynamic_tables.sql
 │   ├── views.sql
 │   ├── streams_tasks.sql
+│   ├── unistore.sql                # Hybrid Tables definition (Enterprise only)
 │   ├── ai_ml_views.sql
 │   ├── advanced_analytics.sql
 │   └── supplier_integration.sql
