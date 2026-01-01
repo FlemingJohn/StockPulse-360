@@ -90,7 +90,40 @@ Healthcare facilities, ration shops, and NGOs face **life-threatening inventory 
 
 ### How It Works
 
-![How It Works Diagram](diagrams/how_it_works.mmd)
+```mermaid
+%%{init: { "theme": "base", "themeVariables": { "lineColor": "#ffffff" } }}%%
+graph TD
+    subgraph "1. Data Ingestion"
+        A[🏥 Hospitals] -->|CSV Upload| B[❄️ Raw Stage]
+        C[🍚 Ration Shops] -->|API Push| B
+        B -->|Snowpipe| D[RAW_STOCK Table]
+    end
+
+    subgraph "2. Transformation Pipeline"
+        D -->|Stream| E[Process Task]
+        E --> F[Stock Stats DT]
+        F -->|Calc Rules| G[Stock Health DT]
+        G -->|Logic| H[Reorder Recs DT]
+    end
+
+    subgraph "3. AI & Intelligence"
+        D -->|Snowpark Python| I[Seasonal Forecaster]
+        I -->|Forecasts| G
+        G -->|Thresholds| J[Critical Alerts]
+    end
+
+    subgraph "4. Action & Consumption"
+        G & H & I --> K[💻 Streamlit Dashboard]
+        J -->|Email/Slack| L[🔔 Notifications]
+        K -->|Write-Back| M[Unistore Hybrid Table]
+    end
+
+    style D fill:#29B5E8,color:white
+    style F fill:#29B5E8,color:white
+    style G fill:#29B5E8,color:white
+    style I fill:#11567f,color:white
+    style K fill:#FF4B4B,color:white
+```
 
 ### The StockPulse 360 Approach
 
@@ -277,7 +310,204 @@ streamlit run streamlit/app.py
 
 ## 🏗️ Architecture
 
-![StockPulse Architecture](diagrams/architecture.mmd)
+```mermaid
+%%{init: { "theme": "base", "themeVariables": { "lineColor": "#ffffff" } }}%%
+graph TB
+    subgraph Client_Side
+        Browser[User Browser]
+    end
+
+    subgraph Cloud_Infrastructure
+        Streamlit[Streamlit Cloud]
+    end
+
+    subgraph Snowflake_Data_Cloud
+        subgraph Compute
+            WH[Compute Warehouse]
+            SP[Snowpark Python Runtime]
+        end
+        
+        subgraph Data_Storage
+            DB[(StockPulse DB)]
+            Stage[Internal Stages]
+        end
+        
+        subgraph AI_Services
+            Cortex[Cortex AI / ML Functions]
+        end
+    end
+
+    subgraph External_Services
+        GM[Google Maps API]
+        Slack[Slack API]
+        SMTP[SMTP Server]
+    end
+
+    Browser -- HTTPS --> Streamlit
+    Streamlit -- Streamlit Connector --> WH
+    WH -- SQL/Python --> DB
+    SP -- Read/Write --> DB
+    SP -- Call --> Cortex
+    
+    Streamlit -- API --> GM
+    SP -- Webhook --> Slack
+    SP -- SMTP --> SMTP
+```
+
+### 🛠️ Data Pipeline
+
+```mermaid
+%%{init: { "theme": "base", "themeVariables": { "lineColor": "#ffffff" } }}%%
+flowchart TD
+    subgraph Sources
+        Gen[Generator Script]
+        CSV[CSV Uploads]
+        App[User Input]
+    end
+
+    subgraph Ingestion_Storage
+        RAW[(raw_stock Table)]
+    end
+
+    subgraph Processing_Layer
+        DT_Stats[DT: stock_stats]
+        DT_Health[DT: stock_health]
+        DT_Rec[DT: reorder_recommendations]
+    end
+
+    subgraph Intelligence_Layer
+        Py_Forecast[forecast_model.py]
+        Py_Anomaly[anomaly_detector.py]
+        Store_Forecast[(forecast_output)]
+    end
+
+    subgraph Presentation_Layer
+        View_Risk[View: stock_risk]
+        View_Alert[View: critical_alerts]
+        Streamlit[Streamlit Dashboard]
+    end
+
+    Gen --> RAW
+    CSV --> RAW
+    App --> RAW
+    
+    RAW --> DT_Stats
+    DT_Stats --> DT_Health
+    DT_Health --> DT_Rec
+    
+    RAW --> Py_Forecast
+    RAW --> Py_Anomaly
+    
+    Py_Forecast --> Store_Forecast
+    Py_Anomaly --> Store_Forecast
+    
+    DT_Health --> View_Risk
+    DT_Rec --> View_Risk
+    DT_Health --> View_Alert
+    Store_Forecast --> View_Risk
+    
+    View_Risk --> Streamlit
+    View_Alert --> Streamlit
+```
+
+## 💾 Data Models
+
+```mermaid
+%%{init: { "theme": "base", "themeVariables": { "lineColor": "#ffffff" } }}%%
+erDiagram
+    %% Base Tables
+    raw_stock {
+        STRING location PK
+        STRING item PK
+        DATE last_updated_date PK
+        NUMBER current_stock
+        NUMBER issued_qty
+        NUMBER received_qty
+        TIMESTAMP_NTZ created_at
+    }
+
+    forecast_output {
+        STRING location PK
+        STRING item PK
+        DATE forecast_date PK
+        NUMBER demand_next_7_days
+        NUMBER demand_next_14_days
+        NUMBER confidence_score
+        TIMESTAMP_NTZ created_at
+    }
+
+    alert_log {
+        NUMBER alert_id PK
+        STRING location
+        STRING item
+        STRING alert_type
+        STRING alert_message
+        NUMBER days_left
+        NUMBER recommended_reorder_qty
+        TIMESTAMP_NTZ alert_date
+        BOOLEAN acknowledged
+        STRING acknowledged_by
+        TIMESTAMP_NTZ acknowledged_at
+    }
+
+    user_actions {
+        NUMBER action_id PK
+        STRING user_name
+        STRING action_type
+        STRING location
+        STRING item
+        VARIANT action_data
+        TIMESTAMP_NTZ action_timestamp
+    }
+
+    %% Dynamic Tables (Derived)
+    stock_stats {
+        STRING location
+        STRING item
+        NUMBER current_stock
+        NUMBER lead_time_days
+        NUMBER avg_daily_usage
+        NUMBER max_daily_usage
+        NUMBER min_daily_usage
+        NUMBER stddev_daily_usage
+        NUMBER avg_daily_received
+        DATE last_updated_date
+    }
+
+    stock_health {
+        STRING location
+        STRING item
+        NUMBER current_stock
+        NUMBER avg_daily_usage
+        NUMBER lead_time_days
+        NUMBER safety_stock
+        NUMBER days_until_stockout
+        STRING stock_status
+        NUMBER health_score
+        DATE last_updated_date
+    }
+
+    reorder_recommendations {
+        STRING location
+        STRING item
+        NUMBER current_stock
+        NUMBER avg_daily_usage
+        NUMBER reorder_quantity
+        STRING priority
+        NUMBER estimated_cost
+        DATE last_updated_date
+    }
+
+    %% Relationships (Implied by Location + Item combination)
+    %% Note: These are logical data flows as Snowflake doesn't enforce FKs on dynamic tables usually
+    raw_stock ||--o{ stock_stats : "aggregates to"
+    stock_stats ||--|| stock_health : "calculates metrics for"
+    stock_health ||--o{ reorder_recommendations : "identifies needs for"
+    
+    %% Implicit links for context
+    raw_stock ||--o{ alert_log : "monitors"
+    raw_stock ||--o{ forecast_output : "training data for"
+```
 
 **Technology Stack:**
 - **Data Warehouse:** Snowflake (Dynamic Tables, Streams, Tasks)
@@ -362,6 +592,43 @@ py -m streamlit run streamlit/app.py
 - Priority-based alert system
 - Real-time notifications
 - Filterable alert dashboard
+
+**Alert Flow Logic:**
+
+```mermaid
+%%{init: { "theme": "base", "themeVariables": { "lineColor": "#ffffff" } }}%%
+sequenceDiagram
+    participant Sched as Scheduler/Cron
+    participant Script as check_all_tables.py
+    participant DB as Snowflake DB
+    participant Notifier as alert_sender.py
+    participant Ext as Email/Slack
+
+    Sched->>Script: Trigger Execution
+    activate Script
+    
+    Script->>DB: Query stock_health (CRITICAL/WARNING)
+    DB-->>Script: Return at-risk items
+    
+    loop For Each Risk Item
+        Script->>DB: Check if alert already sent today (alert_log)
+        
+        alt New Alert
+            Script->>Notifier: Send Alert Payload
+            activate Notifier
+            Notifier->>Ext: Dispatch Notification
+            Ext-->>Notifier: Success 200 OK
+            Notifier-->>Script: Confirmed
+            deactivate Notifier
+            
+            Script->>DB: Insert into alert_log
+        else Alert Already Sent
+            Script->>Script: Skip
+        end
+    end
+    
+    deactivate Script
+```
 
 ### 3️⃣ Reorder Recommendations
 - AI-calculated reorder quantities

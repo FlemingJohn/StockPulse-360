@@ -1,0 +1,50 @@
+flowchart TD
+    subgraph Sources
+        Gen[Generator Script]
+        CSV[CSV Uploads]
+        App[User Input]
+    end
+
+    subgraph Ingestion_Storage
+        RAW[(raw_stock Table)]
+    end
+
+    subgraph Processing_Layer
+        DT_Stats[DT: stock_stats]
+        DT_Health[DT: stock_health]
+        DT_Rec[DT: reorder_recommendations]
+    end
+
+    subgraph Intelligence_Layer
+        Py_Forecast[forecast_model.py]
+        Py_Anomaly[anomaly_detector.py]
+        Store_Forecast[(forecast_output)]
+    end
+
+    subgraph Presentation_Layer
+        View_Risk[View: stock_risk]
+        View_Alert[View: critical_alerts]
+        Streamlit[Streamlit Dashboard]
+    end
+
+    Gen --> RAW
+    CSV --> RAW
+    App --> RAW
+    
+    RAW --> DT_Stats
+    DT_Stats --> DT_Health
+    DT_Health --> DT_Rec
+    
+    RAW --> Py_Forecast
+    RAW --> Py_Anomaly
+    
+    Py_Forecast --> Store_Forecast
+    Py_Anomaly --> Store_Forecast
+    
+    DT_Health --> View_Risk
+    DT_Rec --> View_Risk
+    DT_Health --> View_Alert
+    Store_Forecast --> View_Risk
+    
+    View_Risk --> Streamlit
+    View_Alert --> Streamlit

@@ -1,33 +1,40 @@
 graph TB
-    subgraph "Data Ingestion"
-        A[CSV Upload] -->|Snowpipe| B[Snowflake Stage]
-        B --> C[RAW_STOCK Table]
+    subgraph Client_Side
+        Browser[User Browser]
     end
-    
-    subgraph "Data Processing"
-        C --> D[Dynamic Tables]
-        D --> E[stock_stats]
-        D --> F[stock_health]
-        D --> G[reorder_recommendations]
+
+    subgraph Cloud_Infrastructure
+        Streamlit[Streamlit Cloud]
     end
-    
-    subgraph "AI/ML Layer"
-        H[Seasonal Forecaster<br/>✅ 63 forecasts]
-        I[ABC Analysis<br/>✅ 3 items classified]
-        J[Stockout Impact<br/>✅ 9 items analyzed]
-        K[Budget Tracking<br/>✅ Real-time monitoring]
+
+    subgraph Snowflake_Data_Cloud
+        subgraph Compute
+            WH[Compute Warehouse]
+            SP[Snowpark Python Runtime]
+        end
+        
+        subgraph Data_Storage
+            DB[(StockPulse DB)]
+            Stage[Internal Stages]
+        end
+        
+        subgraph AI_Services
+            Cortex[Cortex AI / ML Functions]
+        end
     end
-    
-    E & F & G --> H & I & J & K
-    
-    subgraph "Presentation"
-        H & I & J & K --> L[Streamlit Dashboard]
-        L --> M[Interactive Visualizations]
-        L --> N[Alerts & Notifications]
-        L --> O[Export & Reports]
+
+    subgraph External_Services
+        GM[Google Maps API]
+        Slack[Slack API]
+        SMTP[SMTP Server]
     end
+
+    Browser -- HTTPS --> Streamlit
+    Streamlit -- Streamlit Connector --> WH
+    WH -- SQL/Python --> DB
+    SP -- Read/Write --> DB
+    SP -- Call --> Cortex
     
-    style H fill:#90EE90
-    style I fill:#90EE90
-    style J fill:#90EE90
-    style K fill:#90EE90
+    Streamlit -- API --> GM
+    SP -- Webhook --> Slack
+    SP -- SMTP --> SMTP

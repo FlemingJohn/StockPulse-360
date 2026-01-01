@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Sched as Scheduler/Cron
+    participant Script as check_all_tables.py
+    participant DB as Snowflake DB
+    participant Notifier as alert_sender.py
+    participant Ext as Email/Slack
+
+    Sched->>Script: Trigger Execution
+    activate Script
+    
+    Script->>DB: Query stock_health (CRITICAL/WARNING)
+    DB-->>Script: Return at-risk items
+    
+    loop For Each Risk Item
+        Script->>DB: Check if alert already sent today (alert_log)
+        
+        alt New Alert
+            Script->>Notifier: Send Alert Payload
+            activate Notifier
+            Notifier->>Ext: Dispatch Notification
+            Ext-->>Notifier: Success 200 OK
+            Notifier-->>Script: Confirmed
+            deactivate Notifier
+            
+            Script->>DB: Insert into alert_log
+        else Alert Already Sent
+            Script->>Script: Skip
+        end
+    end
+    
+    deactivate Script
