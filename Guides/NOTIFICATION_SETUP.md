@@ -300,7 +300,8 @@ python python/slack_notifier.py
 ### Test from Alert Sender
 
 ```python
-python python/alert_sender.py
+python python/alert_sender.py --mode immediate  # For Out of Stock (5-min)
+python python/alert_sender.py --mode daily      # For Morning Report (8 AM)
 ```
 
 ---

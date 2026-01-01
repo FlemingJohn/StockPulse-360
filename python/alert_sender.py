@@ -10,6 +10,7 @@ import pandas as pd
 from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col
 from config import get_snowflake_session
+import argparse
 
 
 class AlertSender:
@@ -220,13 +221,25 @@ class AlertSender:
         return summary_df
 
 
+        return summary_df
+
+
 def run_alert_pipeline():
     """
     Main function to run the alert pipeline.
-    Can be called from Snowflake Task or run manually.
+    Modes:
+    - immediate: Checks only for OUT_OF_STOCK (run frequently)
+    - daily: Checks for CRITICAL/WARNING (run daily morning)
+    - all: Checks everything (default)
     """
+    parser = argparse.ArgumentParser(description='StockPulse 360 Alert Sender')
+    parser.add_argument('--mode', choices=['immediate', 'daily', 'all'], default='all',
+                        help='Alert mode: immediate (SOS only), daily (Morning Report), or all')
+    
+    args = parser.parse_args()
+    
     print("=" * 60)
-    print("StockPulse 360 - Alert Notification Pipeline")
+    print(f"StockPulse 360 - Alert Notification Pipeline (Mode: {args.mode})")
     print("=" * 60)
     
     try:
@@ -240,10 +253,28 @@ def run_alert_pipeline():
         alerts = alert_sender.fetch_critical_alerts()
         
         if alerts is not None:
-            # Send alerts
-            alert_sender.send_alerts(alerts)
+            # Filter based on mode
+            if args.mode == 'immediate':
+                # Only OUT_OF_STOCK
+                filtered_alerts = alerts[alerts['STOCK_STATUS'] == 'OUT_OF_STOCK']
+                if not filtered_alerts.empty:
+                    print(f"⚡ IMMEDIATE MODE: Sending {len(filtered_alerts)} OUT_OF_STOCK alerts")
+                    alert_sender.send_alerts(filtered_alerts)
+                else:
+                    print("✅ No OUT_OF_STOCK items found for immediate alert.")
+                    
+            elif args.mode == 'daily':
+                # Warnings and Critical (Morning Report)
+                # We exclude OUT_OF_STOCK if handled by immediate, or include everything?
+                # Usually daily report includes everything for full context.
+                print(f"🌅 DAILY MODE: Processing Morning Report for {len(alerts)} items")
+                alert_sender.send_alerts(alerts)
+                
+            else:
+                # 'all' mode - standard behavior
+                alert_sender.send_alerts(alerts)
             
-            # Show summary
+            # Show summary (always useful)
             print("\n📊 Alert Summary (Last 7 Days):")
             summary = alert_sender.get_alert_summary()
             if not summary.empty:

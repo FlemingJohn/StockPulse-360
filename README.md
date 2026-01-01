@@ -604,30 +604,40 @@ sequenceDiagram
     participant Notifier as alert_sender.py
     participant Ext as Email/Slack
 
-    Sched->>Script: Trigger Execution
-    activate Script
+    Note over Sched, Script: Dual-Mode Scheduling
     
-    Script->>DB: Query stock_health (CRITICAL/WARNING)
-    DB-->>Script: Return at-risk items
-    
-    loop For Each Risk Item
-        Script->>DB: Check if alert already sent today (alert_log)
+    par Immediate Mode (Every 5 Mins)
+        Sched->>Script: Trigger "alert_sender.py --mode immediate"
+        activate Script
+        Script->>DB: Query OUT_OF_STOCK items
+        DB-->>Script: Return critical items
         
-        alt New Alert
-            Script->>Notifier: Send Alert Payload
+        alt Items Found
+            Script->>Notifier: Send Urgent Alert
             activate Notifier
-            Notifier->>Ext: Dispatch Notification
-            Ext-->>Notifier: Success 200 OK
-            Notifier-->>Script: Confirmed
+            Notifier->>Ext: Dispatch Immediate Notification
+            Ext-->>Notifier: Success
+            Notifier-->>Script: Done
             deactivate Notifier
-            
-            Script->>DB: Insert into alert_log
-        else Alert Already Sent
-            Script->>Script: Skip
         end
+        deactivate Script
+        
+    and Daily Mode (8:00 AM)
+        Sched->>Script: Trigger "alert_sender.py --mode daily"
+        activate Script
+        Script->>DB: Query WARNING & CRITICAL items
+        DB-->>Script: Return all at-risk items
+        
+        alt Items Found
+            Script->>Notifier: Compile Morning Report
+            activate Notifier
+            Notifier->>Ext: Dispatch Summary Email/Slack
+            Ext-->>Notifier: Success
+            Notifier-->>Script: Done
+            deactivate Notifier
+        end
+        deactivate Script
     end
-    
-    deactivate Script
 ```
 
 ### 3️⃣ Reorder Recommendations
@@ -722,7 +732,7 @@ StockPulse-360/
 | Task | Schedule | Purpose |
 |------|----------|---------|
 | `process_new_stock` | Every hour | Process incoming stock data |
-| `generate_critical_alerts` | Every 30 min | Generate urgent alerts |
+| `generate_critical_alerts` | Every 5 min | Generate urgent alerts & daily reports |
 | `daily_summary_report` | Daily 8 AM | Email summary reports |
 | `cleanup_old_alerts` | Weekly | Archive historical alerts |
 

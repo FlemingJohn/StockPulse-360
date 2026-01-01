@@ -68,7 +68,7 @@ END;
 
 CREATE OR REPLACE TASK generate_critical_alerts
     WAREHOUSE = compute_wh
-    SCHEDULE = '30 MINUTE'
+    SCHEDULE = '5 MINUTE'
     COMMENT = 'Generate alerts for critical stock levels'
 AS
 BEGIN
