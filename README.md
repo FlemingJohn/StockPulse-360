@@ -509,13 +509,14 @@ erDiagram
 ```
 
 **Technology Stack:**
-- **Data Warehouse:** Snowflake (Dynamic Tables, Streams, Tasks)
-- **Transactional:** Snowflake Unistore (Hybrid Tables) *⚠️ [Paid Enterprise Account Only]*
+- **Core Platform:** Snowflake Worksheets & SQL
+- **Data Engineering:** Dynamic Tables (Auto-refresh), Streams & Tasks (Scheduling)
 - **AI/ML:** 
-  - **Snowflake Cortex:** `SNOWFLAKE.ML.FORECAST` for Time-Series Forecasting
-  - **Snowpark Python:** Custom logic for Anomaly Detection & Seasonal Analysis
-- **Visualization:** Streamlit, Plotly
-- **Automation:** Snowflake Tasks (Hourly/Daily schedules)
+  - **Snowflake Cortex:** Time-Series Forecasting
+  - **Snowpark Python:** Demand Estimation & Anomaly Detection
+- **Application:** Streamlit (Interactive Dashboard)
+- **Transactional:** Unistore/Hybrid Tables (Action Logs - Optional)
+- **Notifications:** Python Integration (Slack/Email)
 
 ---
 
