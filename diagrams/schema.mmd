@@ -1,0 +1,93 @@
+erDiagram
+    %% Base Tables
+    raw_stock {
+        STRING location PK
+        STRING item PK
+        DATE last_updated_date PK
+        NUMBER current_stock
+        NUMBER issued_qty
+        NUMBER received_qty
+        TIMESTAMP_NTZ created_at
+    }
+
+    forecast_output {
+        STRING location PK
+        STRING item PK
+        DATE forecast_date PK
+        NUMBER demand_next_7_days
+        NUMBER demand_next_14_days
+        NUMBER confidence_score
+        TIMESTAMP_NTZ created_at
+    }
+
+    alert_log {
+        NUMBER alert_id PK
+        STRING location
+        STRING item
+        STRING alert_type
+        STRING alert_message
+        NUMBER days_left
+        NUMBER recommended_reorder_qty
+        TIMESTAMP_NTZ alert_date
+        BOOLEAN acknowledged
+        STRING acknowledged_by
+        TIMESTAMP_NTZ acknowledged_at
+    }
+
+    user_actions {
+        NUMBER action_id PK
+        STRING user_name
+        STRING action_type
+        STRING location
+        STRING item
+        VARIANT action_data
+        TIMESTAMP_NTZ action_timestamp
+    }
+
+    %% Dynamic Tables (Derived)
+    stock_stats {
+        STRING location
+        STRING item
+        NUMBER current_stock
+        NUMBER lead_time_days
+        NUMBER avg_daily_usage
+        NUMBER max_daily_usage
+        NUMBER min_daily_usage
+        NUMBER stddev_daily_usage
+        NUMBER avg_daily_received
+        DATE last_updated_date
+    }
+
+    stock_health {
+        STRING location
+        STRING item
+        NUMBER current_stock
+        NUMBER avg_daily_usage
+        NUMBER lead_time_days
+        NUMBER safety_stock
+        NUMBER days_until_stockout
+        STRING stock_status
+        NUMBER health_score
+        DATE last_updated_date
+    }
+
+    reorder_recommendations {
+        STRING location
+        STRING item
+        NUMBER current_stock
+        NUMBER avg_daily_usage
+        NUMBER reorder_quantity
+        STRING priority
+        NUMBER estimated_cost
+        DATE last_updated_date
+    }
+
+    %% Relationships (Implied by Location + Item combination)
+    %% Note: These are logical data flows as Snowflake doesn't enforce FKs on dynamic tables usually
+    raw_stock ||--o{ stock_stats : "aggregates to"
+    stock_stats ||--|| stock_health : "calculates metrics for"
+    stock_health ||--o{ reorder_recommendations : "identifies needs for"
+    
+    %% Implicit links for context
+    raw_stock ||--o{ alert_log : "monitors"
+    raw_stock ||--o{ forecast_output : "training data for"
