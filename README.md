@@ -317,14 +317,14 @@ graph TB
         Browser[User Browser]
     end
 
-    subgraph Cloud_Infrastructure
+    subgraph "Application & Logic"
         Streamlit[Streamlit Cloud]
+        Snowpark[Snowpark Python API]
     end
 
     subgraph Snowflake_Data_Cloud
         subgraph Compute
             WH[Compute Warehouse]
-            SP[Snowpark Python Runtime]
         end
         
         subgraph Data_Storage
@@ -338,20 +338,19 @@ graph TB
     end
 
     subgraph External_Services
-        GM[Google Maps API]
         Slack[Slack API]
         SMTP[SMTP Server]
     end
 
     Browser -- HTTPS --> Streamlit
     Streamlit -- Streamlit Connector --> WH
+    Snowpark -- Dataframe API --> WH
     WH -- SQL/Python --> DB
-    SP -- Read/Write --> DB
-    SP -- Call --> Cortex
     
-    Streamlit -- API --> GM
-    SP -- Webhook --> Slack
-    SP -- SMTP --> SMTP
+    Streamlit -- Webhook --> Slack
+    Streamlit -- SMTP --> SMTP
+    WH -- Call --> Cortex
+    Snowpark -- Trigger --> Cortex
 ```
 
 ### 🛠️ Data Pipeline
