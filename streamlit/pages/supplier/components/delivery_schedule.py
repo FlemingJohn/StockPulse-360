@@ -175,7 +175,7 @@ def render_delivery_schedule():
             """
 
             with st.spinner("Loading Calendar..."):
-                calendar(events=events, options=calendar_options, custom_css=custom_css)
+                calendar(events=events, options=calendar_options, custom_css=custom_css, key="delivery_calendar")
                 st.caption(f"Showing {len(events)} deliveries. Default view: {datetime.date.today().strftime('%B %Y')}")
                 
             # Legend
