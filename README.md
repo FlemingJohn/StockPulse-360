@@ -596,7 +596,7 @@ py -m streamlit run streamlit/app.py
 **Alert Flow Logic:**
 
 ```mermaid
-%%{init: { "theme": "base", "themeVariables": { "lineColor": "#ffffff" } }}%%
+%%{init: { "theme": "dark", "themeVariables": { "darkMode": true, "actorBorder": "#ffffff", "actorTextColor": "#ffffff", "signalColor": "#ffffff", "signalTextColor": "#ffffff", "noteBorderColor": "#ffffff", "noteTextColor": "#ffffff", "lineColor": "#ffffff" } }}%%
 sequenceDiagram
     participant Sched as Scheduler/Cron
     participant Script as check_all_tables.py
