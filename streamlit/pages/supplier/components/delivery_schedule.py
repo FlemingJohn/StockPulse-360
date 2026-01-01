@@ -111,14 +111,15 @@ def render_delivery_schedule():
                     synthetic_df = pd.DataFrame(new_rows)
                     df = pd.concat([df, synthetic_df], ignore_index=True)
                 
-        # FORCE DATETIME CONVERSION AFTER MERGE TO PREVENT PYARROW ERRORS
-        if 'ORDER_DATE' in df.columns:
-            df['ORDER_DATE'] = pd.to_datetime(df['ORDER_DATE'], errors='coerce')
-        if 'EXPECTED_DELIVERY_DATE' in df.columns:
-            df['EXPECTED_DELIVERY_DATE'] = pd.to_datetime(df['EXPECTED_DELIVERY_DATE'], errors='coerce')
-
+                
     except Exception as e:
         st.warning(f"Could not inject synthetic data: {e}")
+        
+    # FORCE DATETIME CONVERSION (ALWAYS RUNS)
+    if 'ORDER_DATE' in df.columns:
+        df['ORDER_DATE'] = pd.to_datetime(df['ORDER_DATE'], errors='coerce')
+    if 'EXPECTED_DELIVERY_DATE' in df.columns:
+        df['EXPECTED_DELIVERY_DATE'] = pd.to_datetime(df['EXPECTED_DELIVERY_DATE'], errors='coerce')
 
     # Debug / Raw Data
     with st.expander("View Raw Delivery Data Table"):
