@@ -39,7 +39,7 @@ def render_abc_analysis():
             st.plotly_chart(fig2, use_container_width=True)
         
         st.markdown("#### ABC Classification Details")
-        st.dataframe(abc_data[['ITEM', 'TOTAL_VALUE', 'TOTAL_QUANTITY', 'VALUE_PERCENTAGE', 'ABC_CATEGORY', 'CATEGORY_DESCRIPTION']],
+        st.dataframe(abc_data[['ITEM', 'TOTAL_VALUE', 'TOTAL_QUANTITY', 'VALUE_PERCENTAGE', 'ABC_CATEGORY', 'CATEGORY_DESCRIPTION']].astype(str),
                     use_container_width=True, height=200)
     else:
         st.info("🔧 ABC Analysis view not found. Run `python/create_abc_view.py` to create it.")

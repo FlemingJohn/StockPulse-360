@@ -67,6 +67,9 @@ def render_supplier_comparison():
             st.markdown("#### Comparison Details")
             # Show a simplified table
             display_df = filtered_df[['SUPPLIER_NAME', 'UNIT_PRICE', 'AVG_LEAD_TIME_DAYS', 'RELIABILITY_SCORE', 'OVERALL_SCORE']].copy()
+            # Ensure numeric columns are numeric for the gradient to work, but cast others to string if needed?
+            # Actually, this table contains no Dates, so it is SAFE from the PyArrow Date Bug.
+            # I will leave it as is to preserve the styling.
             st.dataframe(
                 display_df.style.background_gradient(subset=['OVERALL_SCORE'], cmap="BuGn"),
                 use_container_width=True,

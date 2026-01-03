@@ -54,7 +54,7 @@ def render_stockout_impact():
         st.markdown("#### Priority Action Items")
         st.dataframe(
             impact_data[['LOCATION', 'ITEM', 'STOCK_STATUS', 'PATIENTS_AFFECTED_UNTIL_STOCKOUT', 
-                        'IMPACT_SEVERITY', 'ACTION_PRIORITY', 'ABC_CATEGORY']].sort_values('ACTION_PRIORITY'),
+                        'IMPACT_SEVERITY', 'ACTION_PRIORITY', 'ABC_CATEGORY']].sort_values('ACTION_PRIORITY').astype(str),
             use_container_width=True, height=300
         )
     else:
