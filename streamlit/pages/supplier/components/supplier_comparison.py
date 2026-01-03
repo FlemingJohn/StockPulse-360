@@ -27,29 +27,26 @@ def render_supplier_comparison():
         from utils import get_svg_icon
         num_suppliers = len(filtered_df)
         
-        icon_svg = get_svg_icon("supplier", size=20, color="#29B5E8")
+        icon_svg = get_svg_icon("supplier", size=18, color="#29B5E8")
         st.markdown(f"""
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; background-color: #f8f9fa; padding: 8px 12px; border-radius: 6px; border-left: 3px solid #29B5E8;">
                 {icon_svg}
-                <span style="font-size: 0.9em; color: #666;">Found {num_suppliers} suppliers for <b>{selected_item}</b></span>
+                <span style="font-size: 0.9em; color: #444;">Multiple Benchmarks <b>({num_suppliers})</b> available for {selected_item}</span>
             </div>
         """, unsafe_allow_html=True)
         
-        if num_suppliers == 1:
-            st.warning(f"Only one supplier found for {selected_item}. Please run 'py python/init_infra.py' to load more data.")
-        
-        # Debug View (Collapsible)
-        with st.expander("🛠️ Debug Information (Verify Data)"):
-            st.write(f"Total rows in view: {len(comparison_data)}")
-            st.write(f"Rows for '{selected_item}': {len(filtered_df)}")
-            st.dataframe(filtered_df, use_container_width=True)
-            if st.button("Force Global Cache Clear"):
-                st.cache_data.clear()
-                st.rerun()
-
-        # Display top recommendation
+        # Display top recommendation with SVG instead of emoji
         top_supplier = filtered_df.iloc[0]
-        st.success(f"🏆 **Top Recommendation:** {top_supplier['SUPPLIER_NAME']} (Score: {top_supplier['OVERALL_SCORE']})")
+        check_svg = get_svg_icon("check", size=20, color="#32CD32")
+        st.markdown(f"""
+            <div style="padding: 15px; background-color: #ebfaeb; border-radius: 8px; border: 1px solid #c3e6cb; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    {check_svg}
+                    <strong style="color: #155724;">Top Recommendation:</strong> 
+                    <span style="color: #155724;">{top_supplier['SUPPLIER_NAME']} (Score: {top_supplier['OVERALL_SCORE']})</span>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
         
         col1, col2 = st.columns([2, 1])
         

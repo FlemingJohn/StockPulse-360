@@ -13,15 +13,12 @@ def execute_sql_file(session, file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
         
-        # Robust splitting strategy
-        # 1. If file has "=====" section headers (like streams_tasks.sql), use those
-        if "-- ============================================================================" in content:
-            statements = content.split("-- ============================================================================")
-        else:
-            # 2. Existing simple split for other files
-            # Remove comments (simple regex, might be risky for complex strings but okay for these files)
-            content = re.sub(r'--.*', '', content)
-            statements = content.split(';')
+        # 1. First, strip out comments to avoid semicolon issues inside comments
+        content = re.sub(r'--.*', '', content)
+        content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+        
+        # 2. Split by semicolon for actual statements
+        statements = content.split(';')
         
         for stmt in statements:
             stmt = stmt.strip()
@@ -29,18 +26,17 @@ def execute_sql_file(session, file_path):
                 continue
                 
             try:
-                # Basic check to avoid running empty or comment-only blocks
-                if stmt.replace('\n', '').strip().startswith('--'):
-                    continue
-                    
-                session.sql(stmt).collect()
+                # Basic check to avoid running empty blocks
+                if stmt.lower().startswith('use') or stmt.lower().startswith('create') or stmt.lower().startswith('insert') or stmt.lower().startswith('drop') or stmt.lower().startswith('update') or stmt.lower().startswith('delete'):
+                    session.sql(stmt).collect()
+                elif len(stmt) > 5: # Fallback for other commands
+                    session.sql(stmt).collect()
             except Exception as e:
-                # Some errors (like DROP IF NOT EXISTS) can be ignored
+                # Some errors can be ignored
                 if "does not exist" in str(e).lower() or "already exists" in str(e).lower():
                     pass
                 else:
-                    print(f"⚠️  Error executing statement: {e}")
-                    # print(f"SQL: {stmt[:100]}...")
+                    print(f"⚠️  Error executing statement in {os.path.basename(file_path)}: {e}")
 
 def init_infra():
     print("=" * 60)
