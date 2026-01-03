@@ -12,31 +12,59 @@ def execute_sql_file(session, file_path):
 
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
+    
+    # 1. Strip comments
+    content = re.sub(r'--.*', '', content)
+    content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+    
+    # 2. Split statements manually by tracking block depth
+    statements = []
+    buffer = []
+    depth = 0
+    
+    lines = content.split('\n')
+    for line in lines:
+        line_strip = line.strip()
+        if not line_strip:
+            continue
+            
+        buffer.append(line)
+        line_upper = line_strip.upper()
         
-        # 1. First, strip out comments to avoid semicolon issues inside comments
-        content = re.sub(r'--.*', '', content)
-        content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
+        # Track block depth (Snowflake Tasks/Procedures use BEGIN ... END;)
+        if "BEGIN" in line_upper:
+            depth += 1
         
-        # 2. Split by semicolon for actual statements
-        statements = content.split(';')
-        
-        for stmt in statements:
-            stmt = stmt.strip()
-            if not stmt:
-                continue
-                
-            try:
-                # Basic check to avoid running empty blocks
-                if stmt.lower().startswith('use') or stmt.lower().startswith('create') or stmt.lower().startswith('insert') or stmt.lower().startswith('drop') or stmt.lower().startswith('update') or stmt.lower().startswith('delete'):
-                    session.sql(stmt).collect()
-                elif len(stmt) > 5: # Fallback for other commands
-                    session.sql(stmt).collect()
-            except Exception as e:
-                # Some errors can be ignored
-                if "does not exist" in str(e).lower() or "already exists" in str(e).lower():
-                    pass
-                else:
-                    print(f"⚠️  Error executing statement in {os.path.basename(file_path)}: {e}")
+        # Semicolon outside of a block marks completion
+        # OR if it's the specific END; of a block
+        if ";" in line_strip:
+            if depth == 0:
+                statements.append("\n".join(buffer).strip())
+                buffer = []
+            elif "END;" in line_upper or "END ;" in line_upper:
+                depth = max(0, depth - 1)
+                if depth == 0:
+                    statements.append("\n".join(buffer).strip())
+                    buffer = []
+
+    # Final buffer
+    if buffer:
+        statements.append("\n".join(buffer).strip())
+            
+    # 3. Execution
+    for stmt in statements:
+        if not stmt or len(stmt) < 5:
+            continue
+            
+        try:
+            session.sql(stmt).collect()
+        except Exception as e:
+            # Ignore harmless errors
+            if "already exists" in str(e).lower() or "does not exist" in str(e).lower():
+                pass
+            else:
+                print(f"⚠️  Error executing statement in {os.path.basename(file_path)}: {e}")
+                print(f"   >>> Statement causing error: {stmt[:250]}...")
 
 def init_infra():
     print("=" * 60)

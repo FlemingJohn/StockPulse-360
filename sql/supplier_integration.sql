@@ -31,7 +31,8 @@ CREATE OR REPLACE TABLE suppliers (
 ) COMMENT = 'Supplier master data with performance tracking';
 
 -- Insert sample suppliers
--- Insert sample suppliers
+DELETE FROM suppliers;
+
 INSERT INTO suppliers (supplier_id, supplier_name, item, avg_lead_time_days, reliability_score, unit_price, contact_email, contact_phone, last_delivery_date, total_orders, on_time_deliveries)
 VALUES
     -- Insulin Suppliers
