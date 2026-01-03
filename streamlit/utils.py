@@ -268,6 +268,11 @@ def load_seasonal_forecasts():
             # Use lowercase table name (the one with data)
             df = session.sql('SELECT * FROM seasonal_forecasts').to_pandas()
             df.columns = [c.upper() for c in df.columns]
+            
+            # Fix for PyArrow serialization error
+            if 'FORECAST_DATE' in df.columns:
+                df['FORECAST_DATE'] = pd.to_datetime(df['FORECAST_DATE'], errors='coerce')
+            
             return df
         except Exception as e:
             st.warning(f"Seasonal forecasts not available: {e}")
@@ -382,6 +387,12 @@ def load_delivery_schedule():
         try:
             df = session.sql('SELECT * FROM delivery_schedule').to_pandas()
             df.columns = [c.upper() for c in df.columns]
+            
+            # Fix for PyArrow: Ensure date cols are proper datetimes
+            for date_col in ['ORDER_DATE', 'EXPECTED_DELIVERY_DATE']:
+                if date_col in df.columns:
+                    df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+            
             return df
         except Exception as e:
             st.warning(f"Delivery schedule not available: {e}")
