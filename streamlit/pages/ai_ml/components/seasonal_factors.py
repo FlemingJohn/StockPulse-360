@@ -1,6 +1,7 @@
 """AI/ML page - Seasonal factors component"""
 import streamlit as st
 import plotly.express as px
+import pandas as pd
 
 def render_seasonal_factors(filtered_forecasts):
     """Render seasonal factors bar chart."""
