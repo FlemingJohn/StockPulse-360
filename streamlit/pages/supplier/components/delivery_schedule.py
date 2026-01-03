@@ -145,25 +145,47 @@ def render_delivery_schedule():
         }
         
         try:
-            for _, row in df.iterrows():
-                start_date = pd.to_datetime(row['ORDER_DATE']).strftime('%Y-%m-%d')
-                end_date = pd.to_datetime(row['EXPECTED_DELIVERY_DATE']).strftime('%Y-%m-%d')
-                
-                title = f"{row['ITEM']} ({row['LOCATION']})"
-                details = f"Supplier: {row['SUPPLIER_NAME']} | Qty: {row['ORDER_QUANTITY']}"
-                
-                event = {
-                    "title": title,
-                    "start": start_date,
-                    "end": end_date,
-                    "backgroundColor": priority_colors.get(row['ORDER_PRIORITY'], '#808080'),
-                    "borderColor": priority_colors.get(row['ORDER_PRIORITY'], '#808080'),
-                    "extendedProps": {
-                        "description": details,
-                        "supplier": row['SUPPLIER_NAME']
+            # Filter out invalid dates
+            valid_df = df.dropna(subset=['ORDER_DATE', 'EXPECTED_DELIVERY_DATE'])
+            
+            if len(valid_df) < len(df):
+                st.warning(f"⚠️ {len(df) - len(valid_df)} deliveries excluded due to invalid dates.")
+            
+            for _, row in valid_df.iterrows():
+                # Safe date conversion
+                if pd.isna(row['ORDER_DATE']) or pd.isna(row['EXPECTED_DELIVERY_DATE']):
+                    continue
+                    
+                try:
+                    start_date = row['ORDER_DATE'].strftime('%Y-%m-%d')
+                    end_date = row['EXPECTED_DELIVERY_DATE'].strftime('%Y-%m-%d')
+                    
+                    # FullCalendar crashes if end < start
+                    if row['EXPECTED_DELIVERY_DATE'] < row['ORDER_DATE']:
+                        end_date = start_date
+
+                    title = f"{str(row['ITEM'])} ({str(row['LOCATION'])})"
+                    # Cast numpy ints/floats to python native types
+                    supplier_name = str(row['SUPPLIER_NAME'])
+                    qty = int(row['ORDER_QUANTITY']) if pd.notna(row['ORDER_QUANTITY']) else 0
+                    
+                    details = f"Supplier: {supplier_name} | Qty: {qty}"
+                    
+                    event = {
+                        "title": title,
+                        "start": start_date,
+                        "end": end_date,
+                        "backgroundColor": str(priority_colors.get(row['ORDER_PRIORITY'], '#808080')),
+                        "borderColor": str(priority_colors.get(row['ORDER_PRIORITY'], '#808080')),
+                        "extendedProps": {
+                            "description": details,
+                            "supplier": supplier_name
+                        }
                     }
-                }
-                events.append(event)
+                    events.append(event)
+                except Exception as ex:
+                    print(f"Skipping bad row: {ex}")
+                    continue
                 
             calendar_options = {
                 "headerToolbar": {"left": "prev,next today", "center": "title", "right": "dayGridMonth,timeGridWeek,listMonth"},

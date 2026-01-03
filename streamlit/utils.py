@@ -266,7 +266,7 @@ def load_seasonal_forecasts():
     if session:
         try:
             # Use lowercase table name (the one with data)
-            df = session.sql('SELECT * FROM "seasonal_forecasts"').to_pandas()
+            df = session.sql('SELECT * FROM seasonal_forecasts').to_pandas()
             df.columns = [c.upper() for c in df.columns]
             return df
         except Exception as e:
