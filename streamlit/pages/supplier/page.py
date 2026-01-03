@@ -19,9 +19,8 @@ def render_supplier_page():
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Create tabs for different supplier features
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3 = st.tabs([
         "Purchase Orders",
-        "Performance Metrics",
         "Supplier Comparison",
         "Delivery Calendar"
     ])
@@ -30,10 +29,7 @@ def render_supplier_page():
         render_purchase_orders()
     
     with tab2:
-        render_performance_metrics()
-    
-    with tab3:
         render_supplier_comparison()
     
-    with tab4:
+    with tab3:
         render_delivery_schedule()

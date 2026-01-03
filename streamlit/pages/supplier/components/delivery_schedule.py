@@ -224,8 +224,12 @@ def render_delivery_schedule():
             """
 
             with st.spinner("Loading Calendar..."):
-                calendar(events=events, options=calendar_options, custom_css=custom_css, key="delivery_calendar")
-                st.caption(f"Showing {len(events)} deliveries. Default view: {datetime.date.today().strftime('%B %Y')}")
+                if not events:
+                    st.info("📅 No deliveries scheduled for the current month. Try switching views or check back later.")
+                else:
+                    calendar(events=events, options=calendar_options, custom_css=custom_css, key="delivery_calendar")
+                    st.caption(f"Showing {len(events)} deliveries. Default view: {datetime.date.today().strftime('%B %Y')}")
+                    st.info("💡 Tip: Use the 'List' view in the top right if the calendar grid is too crowded.")
                 
             # Legend
             st.markdown("---")
