@@ -16,13 +16,6 @@ from .components import (
 def render_supplier_page():
     """Render Supplier Management page."""
     st.markdown(section_header("Supplier Management", "supplier"), unsafe_allow_html=True)
-    
-    # Simple Refresh Mechanism
-    if st.button("🔄 Refresh Data from Snowflake"):
-        st.cache_data.clear()
-        st.toast("Cache cleared! Reloading data...", icon="🔄")
-        st.rerun()
-
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Create tabs for different supplier features

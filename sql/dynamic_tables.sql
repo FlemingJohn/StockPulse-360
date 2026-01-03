@@ -100,4 +100,4 @@ SELECT
     h.last_updated_date,
     CURRENT_TIMESTAMP() AS calculated_at
 FROM stock_health h
-WHERE h.stock_status IN ('OUT_OF_STOCK', 'CRITICAL', 'WARNING');
+WHERE h.stock_status IN ('OUT_OF_STOCK', 'CRITICAL', 'WARNING', 'LOW');
