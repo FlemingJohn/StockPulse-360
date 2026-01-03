@@ -49,18 +49,60 @@ VALUES
     ('SUP006', 'FastPharma', 'Paracetamol', 1, 88, 5.20, 'orders@fastpharma.com', '+91-9876543215', '2024-11-30', 25, 22),
     ('SUP020', 'ReliefPills Co', 'Paracetamol', 3, 94, 4.80, 'info@reliefpills.com', '+91-9876543229', '2024-11-28', 60, 56),
 
-    -- Other Suppliers
+    -- Antibiotics Suppliers
     ('SUP007', 'AntibioCare', 'Antibiotics', 3, 94, 150.00, 'sales@antibiocare.com', '+91-9876543216', '2024-11-28', 60, 58),
+    ('SUP021', 'Global Pharma', 'Antibiotics', 2, 91, 145.00, 'orders@globalpharma.com', '+91-9876543230', '2024-12-01', 30, 27),
+    ('SUP022', 'NanoMeds', 'Antibiotics', 1, 85, 160.00, 'sales@nanomeds.com', '+91-9876543231', '2024-11-30', 40, 34),
+
+    -- Aspirin Suppliers
     ('SUP008', 'PainRelief Inc', 'Aspirin', 2, 90, 4.50, 'orders@painrelief.com', '+91-9876543217', '2024-11-29', 40, 38),
+    ('SUP023', 'AspirinPlus', 'Aspirin', 1, 95, 4.80, 'sales@aspirinplus.com', '+91-9876543232', '2024-11-28', 50, 48),
+    ('SUP024', 'ValueMeds', 'Aspirin', 3, 82, 4.20, 'info@valuemeds.com', '+91-9876543233', '2024-11-30', 20, 16),
+
+    -- BP Monitor Suppliers
     ('SUP009', 'MediTech Devices', 'BP Monitor', 5, 97, 1200.00, 'sales@meditech.com', '+91-9876543218', '2024-11-25', 20, 20),
+    ('SUP025', 'HealthTech', 'BP Monitor', 4, 91, 1150.00, 'orders@healthtech.com', '+91-9876543234', '2024-11-26', 15, 13),
+    ('SUP026', 'PrecisionCare', 'BP Monitor', 3, 89, 1300.00, 'sales@precisioncare.com', '+91-9876543235', '2024-11-27', 10, 9),
+
+    -- Bandages Suppliers
     ('SUP010', 'SurgicalNeeds', 'Bandages', 1, 99, 15.00, 'orders@surgicalneeds.com', '+91-9876543219', '2024-11-30', 150, 149),
+    ('SUP027', 'QuickWrap', 'Bandages', 2, 94, 14.50, 'sales@quickwrap.com', '+91-9876543236', '2024-11-28', 80, 75),
+    ('SUP028', 'SafeCover Co', 'Bandages', 3, 88, 14.00, 'info@safecover.com', '+91-9876543237', '2024-11-29', 50, 44),
+
+    -- Gloves Suppliers
     ('SUP011', 'SafetyFirst', 'Gloves', 2, 93, 8.00, 'sales@safetyfirst.com', '+91-9876543220', '2024-11-28', 200, 190),
+    ('SUP029', 'HandGuard', 'Gloves', 3, 96, 8.50, 'orders@handguard.com', '+91-9876543238', '2024-11-27', 150, 144),
+    ('SUP030', 'ProTouch', 'Gloves', 1, 85, 9.00, 'sales@protouch.com', '+91-9876543239', '2024-11-30', 100, 85),
+
+    -- Glucose Test Strips Suppliers
     ('SUP012', 'DiabeticCare', 'Glucose Test Strips', 2, 96, 25.00, 'orders@diabeticcare.com', '+91-9876543221', '2024-11-29', 80, 78),
+    ('SUP031', 'StripTech', 'Glucose Test Strips', 3, 92, 24.50, 'sales@striptech.com', '+91-9876543240', '2024-12-01', 60, 55),
+    ('SUP032', 'SugarMonitor Inc', 'Glucose Test Strips', 1, 87, 26.00, 'info@sugarmonitor.com', '+91-9876543241', '2024-11-30', 40, 35),
+
+    -- IV Fluids Suppliers
     ('SUP013', 'FluidSystems', 'IV Fluids', 3, 91, 45.00, 'sales@fluidsystems.com', '+91-9876543222', '2024-11-27', 70, 65),
+    ('SUP033', 'AquaMed', 'IV Fluids', 2, 94, 46.00, 'orders@aquamed.com', '+91-9876543242', '2024-11-28', 50, 47),
+    ('SUP034', 'SafeDrop Fluids', 'IV Fluids', 4, 88, 44.00, 'info@safedrop.com', '+91-9876543243', '2024-11-29', 40, 35),
+
+    -- Masks Suppliers
     ('SUP014', 'ProtectMed', 'Masks', 1, 98, 5.00, 'orders@protectmed.com', '+91-9876543223', '2024-11-30', 300, 295),
+    ('SUP035', 'BreathSafe', 'Masks', 2, 95, 4.80, 'sales@breathsafe.com', '+91-9876543244', '2024-11-28', 200, 190),
+    ('SUP036', 'ClearAir Inc', 'Masks', 3, 85, 4.50, 'info@clearair.com', '+91-9876543245', '2024-11-29', 150, 125),
+
+    -- Oxygen Cylinders Suppliers
     ('SUP015', 'OxyGen', 'Oxygen Cylinders', 1, 99, 4500.00, 'sales@oxygen.com', '+91-9876543224', '2024-11-30', 10, 10),
+    ('SUP037', 'PureO2', 'Oxygen Cylinders', 2, 96, 4600.00, 'orders@pureo2.com', '+91-9876543246', '2024-11-29', 8, 7),
+    ('SUP038', 'VitalAir Systems', 'Oxygen Cylinders', 3, 91, 4400.00, 'sales@vitalair.com', '+91-9876543247', '2024-11-28', 12, 11),
+
+    -- Syringes Suppliers
     ('SUP016', 'InjectSafe', 'Syringes', 2, 95, 3.00, 'orders@injectsafe.com', '+91-9876543225', '2024-11-29', 120, 115),
-    ('SUP017', 'TempCheck', 'Thermometers', 4, 92, 350.00, 'sales@tempcheck.com', '+91-9876543226', '2024-11-26', 30, 28);
+    ('SUP039', 'SharpMeds', 'Syringes', 3, 91, 3.20, 'sales@sharpmeds.com', '+91-9876543248', '2024-11-28', 90, 82),
+    ('SUP040', 'PrecisionInjections', 'Syringes', 1, 88, 3.50, 'orders@precisioninjections.com', '+91-9876543249', '2024-11-30', 100, 88),
+
+    -- Thermometers Suppliers
+    ('SUP017', 'TempCheck', 'Thermometers', 4, 92, 350.00, 'sales@tempcheck.com', '+91-9876543226', '2024-11-26', 30, 28),
+    ('SUP041', 'DigiTemp Ltd', 'Thermometers', 3, 95, 370.00, 'orders@digitemp.com', '+91-9876543250', '2024-11-27', 25, 24),
+    ('SUP042', 'BodyScanners Co', 'Thermometers', 5, 85, 330.00, 'sales@bodyscanners.com', '+91-9876543251', '2024-11-25', 15, 12);
 
 -- ============================================================================
 -- View 1: Purchase Orders
