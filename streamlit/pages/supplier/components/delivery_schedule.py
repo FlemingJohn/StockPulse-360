@@ -115,11 +115,29 @@ def render_delivery_schedule():
     except Exception as e:
         st.warning(f"Could not inject synthetic data: {e}")
         
-    # FORCE DATETIME CONVERSION (ALWAYS RUNS)
-    if 'ORDER_DATE' in df.columns:
-        df['ORDER_DATE'] = pd.to_datetime(df['ORDER_DATE'], errors='coerce')
-    if 'EXPECTED_DELIVERY_DATE' in df.columns:
-        df['EXPECTED_DELIVERY_DATE'] = pd.to_datetime(df['EXPECTED_DELIVERY_DATE'], errors='coerce')
+    # ---------------------------------------------------------
+    # DATA NORMALIZATION (The "Permanent Fix")
+    # ---------------------------------------------------------
+    # Ensure strict consistency after synthetic data injection
+    # This aligns Python datetimes (from random) with NumPy datetimes (from Snowflake)
+    try:
+        if 'ORDER_DATE' in df.columns:
+            df['ORDER_DATE'] = pd.to_datetime(df['ORDER_DATE'], errors='coerce')
+        if 'EXPECTED_DELIVERY_DATE' in df.columns:
+            df['EXPECTED_DELIVERY_DATE'] = pd.to_datetime(df['EXPECTED_DELIVERY_DATE'], errors='coerce')
+            
+        # Fill NaNs in critical text columns to avoid 'float' errors
+        text_cols = ['ITEM', 'LOCATION', 'SUPPLIER_NAME', 'ORDER_PRIORITY']
+        for col in text_cols:
+            if col in df.columns:
+                df[col] = df[col].astype(str).replace('nan', 'Unknown')
+                
+        # Fill NaNs in numeric columns
+        if 'ORDER_QUANTITY' in df.columns:
+            df['ORDER_QUANTITY'] = pd.to_numeric(df['ORDER_QUANTITY'], errors='coerce').fillna(0)
+            
+    except Exception as e:
+        st.error(f"Data Normalization Failed: {e}")
 
     # Debug / Raw Data
     with st.expander("View Raw Delivery Data Table"):
