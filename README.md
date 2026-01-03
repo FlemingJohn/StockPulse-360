@@ -707,6 +707,14 @@ sequenceDiagram
 - Supplier performance tracking
 - Delivery schedule management
 - Auto-selection based on reliability
+- Delivery schedule management
+
+### 7️⃣ Data Management (New)
+**Simplified Data Ingestion:**
+- **CSV Upload**: Drag-and-drop interface for bulk stock updates.
+- **Strict Validation**: Auto-checks for required columns (`LOCATION`, `ITEM`, `CURRENT_STOCK`, `ISSUED_QTY`, `RECEIVED_QTY`, `LAST_UPDATED_DATE`).
+- **Template Download**: One-click download of the correct CSV schema.
+- **Auto-Timestamp**: System automatically tags uploads with `CREATED_AT` for audit trails.
 
 ---
 
@@ -796,6 +804,15 @@ StockPulse-360/
 ---
 
 ## 📚 Documentation
+
+### 7. Data Management (CSV Upload)
+1.  Navigate to **Data Management** in the sidebar.
+2.  Click **"Download CSV Template"** to get the correct structure.
+3.  Fill in your stock data (ensure dates are `YYYY-MM-DD`).
+4.  Drag & Drop your file into the uploader.
+5.  Check the **Preview** to verify data.
+6.  Click **"Upload to Database"**.
+    *   *Note: Data refreshes automatically in 1 minute.*
 
 ### 🚀 Getting Started
 - [Setup Guide](Guides/SETUP_GUIDE.md) - Complete installation and configuration
