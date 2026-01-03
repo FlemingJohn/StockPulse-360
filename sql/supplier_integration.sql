@@ -38,31 +38,37 @@ VALUES
     ('SUP001', 'MedSupply Co.', 'Insulin', 3, 95, 500.00, 'orders@medsupply.com', '+91-9876543210', '2024-11-28', 50, 48),
     ('SUP002', 'QuickMeds Ltd', 'Insulin', 1, 85, 520.00, 'sales@quickmeds.com', '+91-9876543211', '2024-11-30', 30, 26),
     ('SUP018', 'Global Insulin Inc', 'Insulin', 2, 92, 490.00, 'support@globalinsulin.com', '+91-9876543227', '2024-11-29', 40, 37),
+    ('SUP043', 'Bharat Insulin', 'Insulin', 4, 98, 480.00, 'sales@bharatinsulin.in', '+91-9876543252', '2024-12-01', 15, 14),
     
     -- ORS Suppliers
     ('SUP003', 'PharmaDirect', 'ORS', 2, 98, 10.00, 'info@pharmadirect.com', '+91-9876543212', '2024-11-29', 100, 98),
     ('SUP004', 'HealthPlus Supplies', 'ORS', 4, 92, 9.50, 'orders@healthplus.com', '+91-9876543213', '2024-11-27', 45, 42),
     ('SUP019', 'PureHydrate', 'ORS', 1, 88, 11.00, 'sales@purehydrate.com', '+91-9876543228', '2024-12-01', 20, 18),
+    ('SUP044', 'Sanjeevani ORS', 'ORS', 3, 95, 9.80, 'orders@sanjeevani_ors.com', '+91-9876543253', '2024-11-28', 35, 33),
     
     -- Paracetamol Suppliers
     ('SUP005', 'MediCare Distributors', 'Paracetamol', 2, 96, 5.00, 'sales@medicare.com', '+91-9876543214', '2024-11-29', 80, 77),
     ('SUP006', 'FastPharma', 'Paracetamol', 1, 88, 5.20, 'orders@fastpharma.com', '+91-9876543215', '2024-11-30', 25, 22),
     ('SUP020', 'ReliefPills Co', 'Paracetamol', 3, 94, 4.80, 'info@reliefpills.com', '+91-9876543229', '2024-11-28', 60, 56),
+    ('SUP045', 'SafePain Ltd', 'Paracetamol', 2, 91, 5.10, 'sales@safepain.com', '+91-9876543254', '2024-11-30', 40, 36),
 
     -- Antibiotics Suppliers
     ('SUP007', 'AntibioCare', 'Antibiotics', 3, 94, 150.00, 'sales@antibiocare.com', '+91-9876543216', '2024-11-28', 60, 58),
     ('SUP021', 'Global Pharma', 'Antibiotics', 2, 91, 145.00, 'orders@globalpharma.com', '+91-9876543230', '2024-12-01', 30, 27),
     ('SUP022', 'NanoMeds', 'Antibiotics', 1, 85, 160.00, 'sales@nanomeds.com', '+91-9876543231', '2024-11-30', 40, 34),
+    ('SUP046', 'Dr Reddy Lab', 'Antibiotics', 2, 97, 155.00, 'info@drreddylab.com', '+91-9876543255', '2024-11-29', 100, 97),
 
     -- Aspirin Suppliers
     ('SUP008', 'PainRelief Inc', 'Aspirin', 2, 90, 4.50, 'orders@painrelief.com', '+91-9876543217', '2024-11-29', 40, 38),
     ('SUP023', 'AspirinPlus', 'Aspirin', 1, 95, 4.80, 'sales@aspirinplus.com', '+91-9876543232', '2024-11-28', 50, 48),
     ('SUP024', 'ValueMeds', 'Aspirin', 3, 82, 4.20, 'info@valuemeds.com', '+91-9876543233', '2024-11-30', 20, 16),
+    ('SUP047', 'CommonHealth', 'Aspirin', 2, 88, 4.90, 'sales@commonhealth.com', '+91-9876543256', '2024-11-29', 30, 26),
 
     -- BP Monitor Suppliers
     ('SUP009', 'MediTech Devices', 'BP Monitor', 5, 97, 1200.00, 'sales@meditech.com', '+91-9876543218', '2024-11-25', 20, 20),
     ('SUP025', 'HealthTech', 'BP Monitor', 4, 91, 1150.00, 'orders@healthtech.com', '+91-9876543234', '2024-11-26', 15, 13),
     ('SUP026', 'PrecisionCare', 'BP Monitor', 3, 89, 1300.00, 'sales@precisioncare.com', '+91-9876543235', '2024-11-27', 10, 9),
+    ('SUP048', 'Omron Pro', 'BP Monitor', 2, 99, 1400.00, 'support@omronpro.in', '+91-9876543257', '2024-12-01', 50, 50),
 
     -- Bandages Suppliers
     ('SUP010', 'SurgicalNeeds', 'Bandages', 1, 99, 15.00, 'orders@surgicalneeds.com', '+91-9876543219', '2024-11-30', 150, 149),

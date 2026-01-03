@@ -23,13 +23,30 @@ def render_supplier_comparison():
     if selected_item:
         filtered_df = comparison_data[comparison_data['ITEM'] == selected_item].copy()
         
-        # Diagnostics
+        # UI Diagnostics using SVG instead of Emoji
+        from utils import get_svg_icon
         num_suppliers = len(filtered_df)
-        st.caption(f"📊 Found {num_suppliers} suppliers for **{selected_item}**")
+        
+        icon_svg = get_svg_icon("supplier", size=20, color="#29B5E8")
+        st.markdown(f"""
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                {icon_svg}
+                <span style="font-size: 0.9em; color: #666;">Found {num_suppliers} suppliers for <b>{selected_item}</b></span>
+            </div>
+        """, unsafe_allow_html=True)
         
         if num_suppliers == 1:
-            st.warning(f"Only one supplier found for {selected_item}. Add more in the database to compare.")
+            st.warning(f"Only one supplier found for {selected_item}. Please run 'py python/init_infra.py' to load more data.")
         
+        # Debug View (Collapsible)
+        with st.expander("🛠️ Debug Information (Verify Data)"):
+            st.write(f"Total rows in view: {len(comparison_data)}")
+            st.write(f"Rows for '{selected_item}': {len(filtered_df)}")
+            st.dataframe(filtered_df, use_container_width=True)
+            if st.button("Force Global Cache Clear"):
+                st.cache_data.clear()
+                st.rerun()
+
         # Display top recommendation
         top_supplier = filtered_df.iloc[0]
         st.success(f"🏆 **Top Recommendation:** {top_supplier['SUPPLIER_NAME']} (Score: {top_supplier['OVERALL_SCORE']})")
