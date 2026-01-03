@@ -123,8 +123,10 @@ def render_delivery_schedule():
 
     # Debug / Raw Data
     with st.expander("View Raw Delivery Data Table"):
+        # Convert to string to avoid PyArrow serialization errors (Streamlit #1 source of crashes)
+        display_df = df[['EXPECTED_DELIVERY_DATE', 'ITEM', 'LOCATION', 'SUPPLIER_NAME', 'ORDER_QUANTITY', 'ORDER_PRIORITY']].copy()
         st.dataframe(
-            df[['EXPECTED_DELIVERY_DATE', 'ITEM', 'LOCATION', 'SUPPLIER_NAME', 'ORDER_QUANTITY', 'ORDER_PRIORITY']],
+            display_df.astype(str),
             use_container_width=True,
             hide_index=True
         )

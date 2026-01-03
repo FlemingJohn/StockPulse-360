@@ -61,8 +61,9 @@ def render_ai_ml_page():
         
         with tab2:
             st.markdown("### Forecast Data Table")
+            # Convert to string to avoid PyArrow crashes with mixed types/dates
             st.dataframe(
-                forecasts,
+                forecasts.astype(str),
                 use_container_width=True,
                 height=400
             )
