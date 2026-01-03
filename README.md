@@ -362,6 +362,17 @@ graph TB
 
 ### 🛠️ Data Pipeline
 
+This 5-stage pipeline ensures data flows from raw inputs to actionable dashboard insights within minutes:
+
+1.  **Ingestion**: Data arrives via CSV uploads or simulated streams into the `RAW_STOCK` table.
+2.  **Processing (Dynamic Tables)**: 
+    *   `STOCK_STATS` aggregates daily usage patterns.
+    *   `STOCK_HEALTH` combines usage with lead times to calculate safety stock.
+    *   `REORDER_RECOMMENDATIONS` applies logic to suggest purchase orders.
+3.  **Intelligence**: Python scripts running on Snowpark generate forecasts and detect anomalies, writing back to `FORECAST_OUTPUT`.
+4.  **Presentation**: Secure Views (`STOCK_RISK`, `CRITICAL_ALERTS`) filter sensitive data for the UI.
+5.  **Consumption**: The Streamlit app queries these optimized views for sub-second load times.
+
 ```mermaid
 %%{init: { "theme": "base", "themeVariables": { "lineColor": "#ffffff" } }}%%
 flowchart TD
@@ -415,8 +426,6 @@ flowchart TD
     View_Risk --> Streamlit
     View_Alert --> Streamlit
 ```
-
-## 💾 Data Models
 
 ## 💾 Data Models
 

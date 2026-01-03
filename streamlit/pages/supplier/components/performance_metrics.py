@@ -9,6 +9,6 @@ def render_performance_metrics():
     perf_data = load_supplier_performance()
     
     if not perf_data.empty:
-        st.dataframe(perf_data, use_container_width=True, height=400)
+        st.dataframe(perf_data.astype(str), use_container_width=True, height=400)
     else:
         st.info("No performance data available.")

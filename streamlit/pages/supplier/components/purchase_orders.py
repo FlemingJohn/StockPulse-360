@@ -23,6 +23,6 @@ def render_purchase_orders():
             unique_suppliers = po_data['SUPPLIER_NAME'].nunique()
             st.metric("Active Suppliers", unique_suppliers)
         
-        st.dataframe(po_data, use_container_width=True, height=400)
+        st.dataframe(po_data.astype(str), use_container_width=True, height=400)
     else:
         st.info("No purchase order data available.")
