@@ -12,23 +12,35 @@ def execute_sql_file(session, file_path):
 
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
-        # Remove comments
-        content = re.sub(r'--.*', '', content)
-        # Split by semicolon
-        statements = content.split(';')
+        
+        # Robust splitting strategy
+        # 1. If file has "=====" section headers (like streams_tasks.sql), use those
+        if "-- ============================================================================" in content:
+            statements = content.split("-- ============================================================================")
+        else:
+            # 2. Existing simple split for other files
+            # Remove comments (simple regex, might be risky for complex strings but okay for these files)
+            content = re.sub(r'--.*', '', content)
+            statements = content.split(';')
         
         for stmt in statements:
             stmt = stmt.strip()
-            if stmt:
-                try:
-                    session.sql(stmt).collect()
-                except Exception as e:
-                    # Some errors (like DROP IF NOT EXISTS) can be ignored
-                    if "does not exist" in str(e).lower() or "already exists" in str(e).lower():
-                        pass
-                    else:
-                        print(f"⚠️  Error executing statement: {e}")
-                        # print(f"SQL: {stmt[:100]}...")
+            if not stmt:
+                continue
+                
+            try:
+                # Basic check to avoid running empty or comment-only blocks
+                if stmt.replace('\n', '').strip().startswith('--'):
+                    continue
+                    
+                session.sql(stmt).collect()
+            except Exception as e:
+                # Some errors (like DROP IF NOT EXISTS) can be ignored
+                if "does not exist" in str(e).lower() or "already exists" in str(e).lower():
+                    pass
+                else:
+                    print(f"⚠️  Error executing statement: {e}")
+                    # print(f"SQL: {stmt[:100]}...")
 
 def init_infra():
     print("=" * 60)
@@ -49,7 +61,8 @@ def init_infra():
             'views.sql',
             'advanced_analytics.sql',
             'supplier_integration.sql',
-            'ai_ml_views.sql'
+            'ai_ml_views.sql',
+            'streams_tasks.sql'  # Added this
         ]
         
         for sql_file in sql_files:

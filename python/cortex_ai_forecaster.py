@@ -93,9 +93,10 @@ class CortexAIForecaster:
         forecast = []
         
         # Initialize with first value
-        s = data['issued'].iloc[0]
+        # Snowflake returns uppercase columns
+        s = data['ISSUED'].iloc[0]
         
-        for value in data['issued']:
+        for value in data['ISSUED']:
             s = alpha * value + (1 - alpha) * s
             forecast.append(s)
         
