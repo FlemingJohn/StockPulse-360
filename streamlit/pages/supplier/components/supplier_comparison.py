@@ -23,6 +23,13 @@ def render_supplier_comparison():
     if selected_item:
         filtered_df = comparison_data[comparison_data['ITEM'] == selected_item].copy()
         
+        # Diagnostics
+        num_suppliers = len(filtered_df)
+        st.caption(f"📊 Found {num_suppliers} suppliers for **{selected_item}**")
+        
+        if num_suppliers == 1:
+            st.warning(f"Only one supplier found for {selected_item}. Add more in the database to compare.")
+        
         # Display top recommendation
         top_supplier = filtered_df.iloc[0]
         st.success(f"🏆 **Top Recommendation:** {top_supplier['SUPPLIER_NAME']} (Score: {top_supplier['OVERALL_SCORE']})")
@@ -43,23 +50,25 @@ def render_supplier_comparison():
                 size='OVERALL_SCORE',
                 color='SUPPLIER_NAME',
                 hover_name='SUPPLIER_NAME',
+                hover_data=['UNIT_PRICE', 'OVERALL_SCORE'],
                 text='SUPPLIER_NAME',
                 title=f"Supplier Performance Matrix: {selected_item}",
                 labels={
-                    'AVG_LEAD_TIME_DAYS': 'Avg Lead Time (Days) - Lower is Better',
-                    'RELIABILITY_SCORE': 'Reliability Score (%) - Higher is Better',
-                    'OVERALL_SCORE': 'Overall Rating'
+                    'AVG_LEAD_TIME_DAYS': 'Lead Time (Days)',
+                    'RELIABILITY_SCORE': 'Reliability (%)',
+                    'SUPPLIER_NAME': 'Supplier'
                 },
                 template="plotly_white",
                 height=500
             )
             
-            # Update markers to be more visible
-            fig.update_traces(textposition='top center', marker=dict(line=dict(width=2, color='DarkSlateGrey')))
-            
-            # Add quadrants or reference lines
-            fig.add_hline(y=filtered_df['RELIABILITY_SCORE'].mean(), line_dash="dot", annotation_text="Avg Reliability")
-            fig.add_vline(x=filtered_df['AVG_LEAD_TIME_DAYS'].mean(), line_dash="dot", annotation_text="Avg Lead Time")
+            # Ensure all points are visible and update layout
+            fig.update_traces(textposition='top center')
+            fig.update_layout(
+                margin=dict(l=20, r=20, t=40, b=20),
+                xaxis=dict(autorange=True, zeroline=False),
+                yaxis=dict(autorange=True, zeroline=False)
+            )
             
             st.plotly_chart(fig, use_container_width=True)
             
