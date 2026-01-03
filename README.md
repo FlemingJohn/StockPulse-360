@@ -90,6 +90,13 @@ Healthcare facilities, ration shops, and NGOs face **life-threatening inventory 
 
 ### How It Works
 
+StockPulse 360 transforms raw inventory data into lifesaving decisions through a 4-step continuous intelligence loop:
+
+1.  **Ingest 📥**: Real-time stock data from hospitals and distribution centers is pushed into **Snowflake** via APIs or CSV uploads.
+2.  **Transform ⚙️**: **Dynamic Tables** automatically clean, aggregate, and calculate consumption rates, maintaining a live "Stock Health" metric for every item.
+3.  **Predict 🧠**: **Snowpark Python** scripts run daily to analyze historical patterns, identifying seasonality (e.g., higher malaria drug usage in monsoon) and generating demand forecasts.
+4.  **Act ⚡**: When stock dips below AI-calculated safety levels, the system triggers immediate **Slack/Email alerts** and recommends prioritized reorders on the **Streamlit** dashboard.
+
 ```mermaid
 %%{init: { "theme": "base", "themeVariables": { "lineColor": "#ffffff" } }}%%
 graph TD
