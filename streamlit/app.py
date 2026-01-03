@@ -32,7 +32,8 @@ from pages import (
     render_reorder_page,
     render_ai_ml_page,
     render_analytics_page,
-    render_supplier_page
+    render_supplier_page,
+    render_data_management_page
 )
 
 # ============================================================================
@@ -71,6 +72,7 @@ def main():
         # we'll use a placeholder for filters or render navigation after determining the page.
         
         nav_options = [
+            "Data Management",
             "Overview & Heatmap",
             "Critical Alerts",
             "Reorder Recommendations",
@@ -110,7 +112,9 @@ def main():
     st.divider()
     
     # Conditional Page Rendering based on Navigation
-    if selected_page == "Overview & Heatmap":
+    if selected_page == "Data Management":
+        render_data_management_page()
+    elif selected_page == "Overview & Heatmap":
         render_overview_page()
     elif selected_page == "Critical Alerts":
         render_alerts_page()
