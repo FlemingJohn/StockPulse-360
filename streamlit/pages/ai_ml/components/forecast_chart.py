@@ -11,6 +11,12 @@ def render_forecast_chart(forecasts, selected_location, selected_item):
         filtered_forecasts = filtered_forecasts[filtered_forecasts['ITEM'] == selected_item]
     
     if not filtered_forecasts.empty:
+        # Pre-chart safety: Ensure types are correct for Plotly
+        if 'FORECAST_DATE' in filtered_forecasts.columns:
+            filtered_forecasts['FORECAST_DATE'] = pd.to_datetime(filtered_forecasts['FORECAST_DATE'])
+        if 'FORECASTED_USAGE' in filtered_forecasts.columns:
+            filtered_forecasts['FORECASTED_USAGE'] = pd.to_numeric(filtered_forecasts['FORECASTED_USAGE'], errors='coerce')
+            
         fig = px.line(
             filtered_forecasts,
             x='FORECAST_DATE',

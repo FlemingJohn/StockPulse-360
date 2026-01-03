@@ -8,6 +8,15 @@ def render_seasonal_factors(filtered_forecasts):
         return
     
     if 'SEASONAL_FACTOR' in filtered_forecasts.columns:
+        # Safety: Ensure types are correct for Plotly
+        try:
+            filtered_forecasts = filtered_forecasts.copy()
+            if 'FORECAST_DATE' in filtered_forecasts.columns:
+                filtered_forecasts['FORECAST_DATE'] = pd.to_datetime(filtered_forecasts['FORECAST_DATE'])
+            filtered_forecasts['SEASONAL_FACTOR'] = pd.to_numeric(filtered_forecasts['SEASONAL_FACTOR'], errors='coerce')
+        except:
+            pass
+            
         st.markdown("#### Seasonal Adjustment Factors")
         st.markdown("Values > 1.0 indicate higher demand, < 1.0 indicate lower demand")
         
